@@ -38,14 +38,26 @@ fi
 
 cd ..
 
-# Deploy to server
+# Deploy to server with improved rsync parameters
 print_status "Deploying to server..."
-# rsync -avz --delete api/public/dist/ $SERVER_USER@$SERVER_HOST:/var/www/mta.manager/html/public/
-rsync -avz --delete api/public/dist/ $SERVER_USER@$SERVER_HOST:/var/www/mta.manager/html/laravel/public/dist/
+# Use SSH with explicit control options to prevent connection timeout
+rsync -avzP --delete --timeout=120 -e "ssh -o ConnectTimeout=60 -o ServerAliveInterval=30 -o ServerAliveCountMax=10" api/public/dist/ $SERVER_USER@$SERVER_HOST:/var/www/mta.manager/html/laravel/public/dist/
 
 if [ $? -ne 0 ]; then
     print_error "Deployment to server failed!"
-    exit 1
+    # Try an alternative method if rsync fails
+    print_status "Trying alternative deployment method..."
+    ssh -o ConnectTimeout=60 $SERVER_USER@$SERVER_HOST "mkdir -p /var/www/mta.manager/html/laravel/public/dist/"
+    scp -r api/public/dist/* $SERVER_USER@$SERVER_HOST:/var/www/mta.manager/html/laravel/public/dist/
+    
+    if [ $? -ne 0 ]; then
+        print_error "Alternative deployment also failed!"
+        exit 1
+    else
+        print_success "Alternative deployment succeeded!"
+    fi
+else
+    print_success "Deployment succeeded!"
 fi
 
 # Push changes if any

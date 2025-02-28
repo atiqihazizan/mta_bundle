@@ -3,7 +3,7 @@ import { toast } from "react-toastify"; // Opsional: untuk notifikasi
 import TokenService from "./utils/token";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api"; // Bisa pakai proxy atau direct URL
-
+console.log(API_BASE_URL);
 const axiosClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
