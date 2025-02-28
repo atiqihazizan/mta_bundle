@@ -32,14 +32,14 @@ export default function DefaultLayout() {
 				setUserToken(null);
 			});
 		
-		const checkToken = () => {
-			if (!TokenService.hasToken() || TokenService.isTokenExpired()) {
-				navigate("/login");
-			}
-		};
+		// const checkToken = () => {
+		// 	if (!TokenService.hasToken() || TokenService.isTokenExpired()) {
+		// 		navigate("/login");
+		// 	}
+		// };
 
-		window.addEventListener("focus", checkToken);
-		return () => window.removeEventListener("focus", checkToken);
+		// window.addEventListener("focus", checkToken);
+		// return () => window.removeEventListener("focus", checkToken);
 		
 	}, [userToken]);
 
