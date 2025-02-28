@@ -34,7 +34,8 @@ fi
 
 # Deploy to server
 print_status "Deploying to server..."
-rsync -avz --delete dist/ $SERVER_USER@$SERVER_HOST:/var/www/mta.manager/html/public/
+# rsync -avz --delete dist/ $SERVER_USER@$SERVER_HOST:/var/www/mta.manager/html/public/
+rsync -avz --delete dist/ $SERVER_USER@$SERVER_HOST:/var/www/mta.manager/html/laravel/public/
 
 if [ $? -ne 0 ]; then
     print_error "Deployment to server failed!"
