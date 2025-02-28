@@ -46,7 +46,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     proxy: {
       "/api": {
-        target: mode === "development" ? "https://admin.masjidtuanabdullah.com/" : "/",
+        target: mode === "development" ? "https://admin.masjidtuanabdullah.com/" : "/api",
         changeOrigin: true,
         secure: false,
       },
