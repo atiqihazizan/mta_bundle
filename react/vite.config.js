@@ -44,12 +44,12 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    // proxy: {
-    //   "/api": {
-    //     target: "http://api.masjidtuanabdullah.com",
-    //     changeOrigin: true,
-    //     secure: false,
-    //   },
-    // },
+    proxy: {
+      "/api": {
+        target: mode === "development" ? "https://admin.masjidtuanabdullah.com/" : "/",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 }));
