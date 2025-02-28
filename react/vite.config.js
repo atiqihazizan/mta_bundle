@@ -6,8 +6,7 @@ import autoprefixer from 'autoprefixer'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  // base: mode === "development" ? "/" : "/dist/",
-  base: "/",
+  base: mode === "development" ? "/" : "/dist/",
   css: {
     preprocessorOptions: {
       css: {
