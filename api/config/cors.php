@@ -32,8 +32,8 @@ return [
   'paths' => ['*'], // Izinkan semua path
   'allowed_methods' => ['*'], // Izinkan semua metode (GET, POST, dll.)
   'allowed_origins' => [
-      'http://admin.masjidtuanabdullah.com',
-      'http://api.masjidtuanabdullah.com',
+      'http://admin.masjidtuanabdullah.com/api',
+      // 'http://api.masjidtuanabdullah.com',
       'http://localhost:5173', // Tambahkan localhost
   ],
   'allowed_origins_patterns' => [],
