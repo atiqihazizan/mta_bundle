@@ -3,59 +3,105 @@ import PageComponent from "../components/PageComponent";
 import { Card, CardHeader, CardBody, CardFooter, Typography, Avatar } from "@material-tailwind/react";
 import { UserGroupIcon, UserPlusIcon, HomeIcon, UserCircleIcon, MapPinIcon } from "@heroicons/react/24/solid";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import axiosClient from "../axios";
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
+const INITIAL_STATS = {
+  totalKariah: 0,
+  totalAhliKeluarga: 0,
+  totalRumah: 0,
+  kadiahBaru: 0,
+  zoneStats: {
+    'Zone A': 0,
+    'Zone B': 0,
+    'Zone C': 0,
+    'Zone D': 0
+  },
+  newKariahList: []
+};
 
 function Dashboard() {
-  const [stats, setStats] = useState({
-    totalKariah: 0,
-    totalAhliKeluarga: 0,
-    totalRumah: 0,
-    kadiahBaru: 0,
-    zoneStats: {
-      'Zone A': 0,
-      'Zone B': 0,
-      'Zone C': 0,
-      'Zone D': 0
-    }
-  });
-
-  const [pieData, setPieData] = useState([]);
-  const [newKariahList, setNewKariahList] = useState([]);
+  const [stats, setStats] = useState(INITIAL_STATS);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch data from API
-    const zoneData = {
-      'Zone A': 75,
-      'Zone B': 60,
-      'Zone C': 65,
-      'Zone D': 50
+    const fetchDashboardData = async () => {
+      try {
+        // Uncomment ini bila API sudah siap
+        // const response = await axiosClient.get('/dashboard/stats');
+        // setStats({
+        //   ...INITIAL_STATS,
+        //   ...response.data
+        // });
+
+        // Data dummy sementara
+        setStats({
+          totalKariah: 250,
+          totalAhliKeluarga: 1000,
+          totalRumah: 200,
+          kadiahBaru: 15,
+          zoneStats: {
+            'Zone A': 75,
+            'Zone B': 60,
+            'Zone C': 65,
+            'Zone D': 50
+          },
+          newKariahList: [
+            { id: 1, nama: 'Ahmad bin Abdullah', alamat: 'No. 123, Jalan Masjid', tarikh: '2025-03-01', zone: 'Zone A' },
+            { id: 2, nama: 'Siti binti Hassan', alamat: 'No. 45, Lorong Imam', tarikh: '2025-03-02', zone: 'Zone B' },
+            { id: 3, nama: 'Muhammad bin Ibrahim', alamat: 'No. 67, Jalan Taqwa', tarikh: '2025-03-03', zone: 'Zone C' },
+            { id: 4, nama: 'Fatimah binti Omar', alamat: 'No. 89, Lorong Solat', tarikh: '2025-03-04', zone: 'Zone D' },
+            { id: 5, nama: 'Ismail bin Yusof', alamat: 'No. 12, Jalan Iman', tarikh: '2025-03-05', zone: 'Zone A' }
+          ]
+        });
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    // Contoh data
-    setStats({
-      totalKariah: 250,
-      totalAhliKeluarga: 1000,
-      totalRumah: 200,
-      kadiahBaru: 5,
-      zoneStats: zoneData
-    });
-
-    // Kira peratusan untuk pie chart
-    const total = Object.values(zoneData).reduce((a, b) => a + b, 0);
-    setPieData(Object.entries(zoneData).map(([name, value]) => ({
-      name,
-      value,
-      percentage: ((value / total) * 100).toFixed(1)
-    })));
-
-    // Contoh data kariah baru
-    setNewKariahList([
-      { id: 1, nama: 'Ahmad bin Abdullah', alamat: 'No. 123, Jalan Masjid', tarikh: '2025-03-01', zone: 'Zone A' },
-      { id: 2, nama: 'Siti binti Hassan', alamat: 'No. 45, Lorong Imam', tarikh: '2025-03-02', zone: 'Zone B' },
-      { id: 3, nama: 'Muhammad bin Ibrahim', alamat: 'No. 67, Jalan Taqwa', tarikh: '2025-03-03', zone: 'Zone C' },
-      { id: 4, nama: 'Fatimah binti Omar', alamat: 'No. 89, Lorong Solat', tarikh: '2025-03-04', zone: 'Zone D' },
-      { id: 5, nama: 'Ismail bin Yusof', alamat: 'No. 12, Jalan Iman', tarikh: '2025-03-05', zone: 'Zone A' }
-    ]);
+    fetchDashboardData();
   }, []);
+
+  // Transform zone stats untuk pie chart
+  const pieData = Object.entries(stats.zoneStats).map(([zone, value], index) => ({
+    name: zone,
+    value: value,
+    percentage: Math.round((value / (Object.values(stats.zoneStats).reduce((a, b) => a + b, 0) || 1)) * 100),
+    fill: COLORS[index % COLORS.length]
+  }));
+
+  // Custom label untuk pie chart
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="white" 
+        textAnchor="middle" 
+        dominantBaseline="central"
+        style={{ fontSize: '14px', fontWeight: 'bold' }}
+      >
+        {name} ({`${(percent * 100).toFixed(0)}%`})
+      </text>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   const statCards = [
     {
@@ -109,26 +155,6 @@ function Dashboard() {
     return null;
   };
 
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
-        className="text-xs font-medium"
-      >
-        {`${(percent * 100).toFixed(1)}%`}
-      </text>
-    );
-  };
-
   return (
     <PageComponent title="Dashboard Kariah">
       <div className="h-[calc(100vh-100px)] overflow-auto space-y-12 p-4 mt-3">
@@ -169,33 +195,42 @@ function Dashboard() {
               </Typography>
             </CardHeader>
             <CardBody className="p-6">
-              <div className="h-[400px]">
+              <div className="h-[450px] flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart width={500} height={400}>
+                  <PieChart>
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
                       label={renderCustomizedLabel}
-                      outerRadius={150}
+                      outerRadius={180}
                       fill="#8884d8"
                       dataKey="value"
                     >
                       {pieData.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
-                          fill={zoneColors[entry.name]}
+                          fill={entry.fill}
                         />
                       ))}
                     </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend 
-                      formatter={(value, entry) => {
-                        const { percentage } = entry.payload;
-                        return `${value} (${percentage}%)`;
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-white p-2 border rounded shadow">
+                              <p className="font-bold">{data.name}</p>
+                              <p>Kariah: {data.value}</p>
+                              <p>Peratusan: {data.percentage}%</p>
+                            </div>
+                          );
+                        }
+                        return null;
                       }}
                     />
+                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -218,7 +253,7 @@ function Dashboard() {
                 className="custom-scrollbar h-[400px] overflow-auto"
               >
                 <ul role="list" className="divide-y divide-gray-200 -my-2">
-                  {newKariahList.map((kariah) => (
+                  {(stats.newKariahList || []).map((kariah) => (
                     <li key={kariah.id} className="py-4 px-2 hover:bg-blue-gray-50/50 transition-colors">
                       <div className="flex items-center space-x-4">
                         <div className="flex-shrink-0">
