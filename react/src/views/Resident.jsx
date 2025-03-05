@@ -8,18 +8,69 @@ import Pulse from "../components/Core/Pulse";
 import AddressView from "./resident/AddressView";
 import Peoples from "./resident/PeoplesView";
 import TButton from "../components/Core/TButton";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+// Fix untuk ikon Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 function Resident() {
 	const {id} = useParams();
 	const [peoples, setPeoples] = useState([]);
 	const [address, setAddress] = useState();
 	const [loading, setLoading] = useState(id ? true : false);
+  const [markerPosition, setMarkerPosition] = useState({
+    lat: import.meta.env.VITE_MAP_CENTER_LAT,
+    lng: import.meta.env.VITE_MAP_CENTER_LNG
+  });
+  const center = {
+    lat: import.meta.env.VITE_MAP_CENTER_LAT,
+    lng: import.meta.env.VITE_MAP_CENTER_LNG
+  };
+  const zoom = import.meta.env.VITE_MAP_ZOOM;
+  
+  const handleMarkerDrag = (e) => {
+    const { lat, lng } = e.target.getLatLng();
+    setMarkerPosition({ lat, lng });
+    
+    // Update address dengan koordinat baru
+    if (address) {
+      const updatedAddress = {
+        ...address,
+        latlng: `${lat},${lng}`
+      };
+      setAddress(updatedAddress);
+      
+      // Hantar update ke server
+      axiosClient.put(`/address/${address.id}`, {
+        latlng: `${lat},${lng}`
+      }).then(({data}) => {
+        console.log('Koordinat telah dikemaskini:', data);
+      }).catch(err => {
+        console.error('Ralat ketika mengemaskini koordinat:', err);
+      });
+    }
+  };
 
 	const getResidency = () => {
 		const url = `/kariah/${id}`;
 		axiosClient.get(url).then(({ data:{data:{address:addr,people}} }) => {
 			setLoading(false);
-			setAddress(addr)
+			setAddress(addr);
+      // Set marker position dari data yang ada
+      if (addr?.latlng) {
+        const [lat, lng] = addr.latlng.split(',').map(Number);
+        setMarkerPosition({ lat, lng });
+      }
 			setPeoples(people);
 		});
 	};
@@ -39,32 +90,39 @@ function Resident() {
 					<div className="flex flex-col gap-6">
 						<div className="grid grid-cols-3 gap-6">
 							<AddressView address={address} />
-							<div className="col-span-2 flex flex-col gap-6">
-								<Peoples
-									updated={setPeoples}
-									title="Ketua Rumah dan Pasangan"
-									data={peoples.filter(({ status }) => [1, 2].includes(status))}
-									cols="name,nokp,mobile,sibling"
-								/>
-								<Peoples
-									updated={setPeoples}
-									title="Penama Kedua"
-									data={peoples.filter(({ penama }) => penama == 1)}
-									cols="name,mobile,sibling"
-								/>
-								<Peoples
-									updated={setPeoples}
-									title="Penyakit Kekal"
-									data={peoples.filter(({ stshealthy }) => stshealthy == 1)}
-									cols="name,penyakit,sibling"
-								/>
-							</div>
+              <div className="col-span-2 maps h-[400px]">
+                <MapContainer 
+                  center={[center.lat, center.lng]} 
+                  zoom={zoom} 
+                  style={{ height: '100%', width: '100%' }}
+                >
+                  <TileLayer
+                    attribution={import.meta.env.VITE_MAP_ATTRIBUTION}
+                    url={import.meta.env.VITE_MAP_TILE_URL}
+                  />
+                  <Marker 
+                    position={[markerPosition.lat, markerPosition.lng]}
+                    draggable={true}
+                    eventHandlers={{
+                      dragend: handleMarkerDrag,
+                    }}
+                  >
+                    <Popup>
+                      {address?.address1}<br/>
+                      {address?.address2}<br/>
+                      {address?.address3}<br/>
+                      <strong>Lat: {markerPosition.lat}</strong><br/>
+                      <strong>Lng: {markerPosition.lng}</strong>
+                    </Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
 						</div>
 						<Peoples
 							updated={setPeoples}
 							title="Tanggungan"
-							data={peoples.filter(({ tanggungan }) => tanggungan == 1)}
-							cols="name,nokp,mobile,edustatus,sibling,employee"
+							data={peoples}
+							cols="name,nokp,mobile,edustatus,sibling,employee,stshealthy"
 						/>
 					</div>
 				)}

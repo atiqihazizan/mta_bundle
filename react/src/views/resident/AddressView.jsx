@@ -130,6 +130,11 @@ export default function AddressView({ address }) {
 							text: dataAddr?.kawasan?.toUpperCase(),
 							class: false,
 						},
+            {
+              label: "Koordinat",
+              text: `${dataAddr?.latlng || "-"}`,
+              class: false,
+            }
 					]}
 					oOption={option}
 				/>
@@ -155,6 +160,7 @@ export default function AddressView({ address }) {
 									keyval="id,name"
 									listArr={cares || []}
 								/>
+								<FormC.LText text={"Koordinat"} field={"latlng"} />
 							</div>
 						</FormC>
 					</form>

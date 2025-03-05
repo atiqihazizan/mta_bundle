@@ -14,16 +14,16 @@ export default function PeopleView({ title, data, cols, updated }) {
 	const { showToast } = useStateContext();
 	const _cols = [
 		{
-			name: "Nama",
-			field: "name",
-			nClass: "text-left",
-			nClassRow: "text-left",
-		},
-		{
 			name: "No. K/P",
 			field: "nokp",
 			nClass: "w-[100px] text-left",
 			nClassRow: "text-left text-sm font-normal text-gray-700",
+		},
+		{
+			name: "Nama",
+			field: "name",
+			nClass: "text-left",
+			nClassRow: "text-left",
 		},
 		{
 			name: "No. Tel",
@@ -47,12 +47,6 @@ export default function PeopleView({ title, data, cols, updated }) {
 			name: "Pekerjaan",
 			field: "employee",
 			nClass: "w-[170px] text-left",
-			nClassRow: "text-left text-sm font-normal text-gray-700",
-		},
-		{
-			name: "Penyakit",
-			field: "penyakit",
-			nClass: "w-[250px] text-left",
 			nClassRow: "text-left text-sm font-normal text-gray-700",
 		},
 	];
@@ -94,9 +88,25 @@ export default function PeopleView({ title, data, cols, updated }) {
 	};
 	useEffect(() => {
 		const ar = cols.split(",");
-		const aCol = _cols.filter((f) => ar.includes(f.field)).map((c) => c);
+		// const aCol = _cols.filter((f) => ar.includes(f.field)).map((c) => c);
 		const myCols = [
-			...aCol,
+			..._cols,
+      {
+        name: "Sakit Berpanjangan", 
+        nClass: "w-[100px] text-left",
+        nClassRow: "text-center text-sm font-normal text-gray-700",
+        render: ({ id: kid, ppl_id: id,stshealthy }) => stshealthy === 1 ? (
+          <i className="ki-solid ki-pulse text-danger"></i>
+        ) : null,
+      },
+      {
+        name: "Tanggungan",
+        nClass: "w-[100px] text-left",
+        nClassRow: "text-center text-sm font-normal text-gray-700",
+        render: ({ id: kid, ppl_id: id,tanggungan }) => tanggungan === 1 ? (
+          <i className="ki-solid ki-pin text-danger"></i>
+        ) : null,
+      },
 			{
 				name: "",
 				class: "w-[50px]",
