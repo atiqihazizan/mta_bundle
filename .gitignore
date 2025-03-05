@@ -52,3 +52,6 @@ lerna-debug.log*
 
 # Temporary files/folders
 **/xtrash/
+
+# Backup files
+/backup/

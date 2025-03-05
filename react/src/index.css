@@ -8,6 +8,54 @@
         @apply text-neutral-50;
         @apply bg-neutral-800;
     }
+
+    /* Custom Scrollbar untuk Chrome */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f3f4f6;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #e5e7eb;
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #d1d5db;
+    }
+
+    /* Custom scrollbar styles */
+    .custom-scrollbar {
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE and Edge */
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      display: none; /* Chrome, Safari and Opera */
+    }
+
+    .custom-scrollbar:hover {
+      scrollbar-width: thin; /* Firefox */
+      -ms-overflow-style: auto; /* IE and Edge */
+    }
+
+    .custom-scrollbar:hover::-webkit-scrollbar {
+      display: block;
+      width: 6px;
+      height: 6px;
+    }
+
+    .custom-scrollbar:hover::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+      background-color: #94a3b8;
+      border-radius: 3px;
+    }
 }
 @tailwind components;
 @tailwind utilities;

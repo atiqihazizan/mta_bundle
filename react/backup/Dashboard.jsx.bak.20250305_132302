@@ -214,12 +214,15 @@ function Dashboard() {
               </Typography>
             </CardHeader>
             <CardBody className="p-6">
-              <div 
-                className="custom-scrollbar h-[400px] overflow-auto"
-              >
+              <div style={{ 
+                height: '400px', 
+                overflowY: 'auto',
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#e5e7eb #f3f4f6'
+              }}>
                 <ul role="list" className="divide-y divide-gray-200 -my-2">
                   {newKariahList.map((kariah) => (
-                    <li key={kariah.id} className="py-4 px-2 hover:bg-blue-gray-50/50 transition-colors">
+                    <li key={kariah.id} className="py-4 hover:bg-blue-gray-50/50 transition-colors">
                       <div className="flex items-center space-x-4">
                         <div className="flex-shrink-0">
                           <Avatar

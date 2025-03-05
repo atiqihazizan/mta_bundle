@@ -162,7 +162,7 @@ function Dashboard() {
             <CardHeader
               variant="gradient"
               color="blue"
-              className="mb-8 p-6"
+              className="mb-6 p-6"
             >
               <Typography variant="h6" color="white">
                 Peratusan Kariah Mengikut Zone
@@ -207,47 +207,92 @@ function Dashboard() {
             <CardHeader
               variant="gradient"
               color="purple"
-              className="mb-8 p-6"
+              className="mb-6 p-6"
             >
               <Typography variant="h6" color="white">
                 Kariah Baru
               </Typography>
             </CardHeader>
-            <CardBody className="p-6">
-              <div 
-                className="custom-scrollbar h-[400px] overflow-auto"
-              >
-                <ul role="list" className="divide-y divide-gray-200 -my-2">
+            <CardBody className="h-[400px] overflow-y-auto hover:overflow-y-scroll px-0 pt-0 pb-2 scrollbar-thin scrollbar-thumb-blue-gray-100 scrollbar-track-transparent">
+              <table className="w-full min-w-[640px] table-auto">
+                <thead className="sticky top-0 bg-white">
+                  <tr>
+                    <th className="border-b border-blue-gray-50 py-3 px-6 text-left">
+                      <Typography
+                        variant="small"
+                        className="text-[11px] font-medium uppercase text-blue-gray-400"
+                      >
+                        Nama
+                      </Typography>
+                    </th>
+                    <th className="border-b border-blue-gray-50 py-3 px-6 text-left">
+                      <Typography
+                        variant="small"
+                        className="text-[11px] font-medium uppercase text-blue-gray-400"
+                      >
+                        Alamat
+                      </Typography>
+                    </th>
+                    <th className="border-b border-blue-gray-50 py-3 px-6 text-left">
+                      <Typography
+                        variant="small"
+                        className="text-[11px] font-medium uppercase text-blue-gray-400"
+                      >
+                        Tarikh Daftar
+                      </Typography>
+                    </th>
+                    <th className="border-b border-blue-gray-50 py-3 px-6 text-left">
+                      <Typography
+                        variant="small"
+                        className="text-[11px] font-medium uppercase text-blue-gray-400"
+                      >
+                        Zone
+                      </Typography>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
                   {newKariahList.map((kariah) => (
-                    <li key={kariah.id} className="py-4 px-2 hover:bg-blue-gray-50/50 transition-colors">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex-shrink-0">
-                          <Avatar
-                            variant="circular"
-                            alt={kariah.nama}
-                            className="p-1"
-                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(kariah.nama)}&background=random`}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {kariah.nama}
-                          </p>
-                          <p className="text-sm text-gray-500 truncate mt-1">
-                            {kariah.alamat}
-                          </p>
-                          <p className="text-xs text-blue-600 font-medium mt-1">
-                            {kariah.zone}
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0 text-sm text-gray-500">
+                    <tr key={kariah.id}>
+                      <td className="py-3 px-6 border-b border-blue-gray-50">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="font-bold"
+                        >
+                          {kariah.nama}
+                        </Typography>
+                      </td>
+                      <td className="py-3 px-6 border-b border-blue-gray-50">
+                        <Typography
+                          variant="small"
+                          className="text-xs font-medium text-blue-gray-600"
+                        >
+                          {kariah.alamat}
+                        </Typography>
+                      </td>
+                      <td className="py-3 px-6 border-b border-blue-gray-50">
+                        <Typography
+                          variant="small"
+                          className="text-xs font-medium text-blue-gray-600"
+                        >
                           {new Date(kariah.tarikh).toLocaleDateString('ms-MY')}
+                        </Typography>
+                      </td>
+                      <td className="py-3 px-6 border-b border-blue-gray-50">
+                        <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center">
+                          <Typography
+                            variant="small"
+                            className="text-xs font-medium text-blue-gray-600"
+                          >
+                            {kariah.zone}
+                          </Typography>
                         </div>
-                      </div>
-                    </li>
+                      </td>
+                    </tr>
                   ))}
-                </ul>
-              </div>
+                </tbody>
+              </table>
             </CardBody>
           </Card>
         </div>
