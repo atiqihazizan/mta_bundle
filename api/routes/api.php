@@ -38,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::apiResource('jenazah', JenazahController::class);
   Route::get('/jenazah/report/{yrmth}',[JenazahController::class,'report']);
   Route::get('/options',[AddressController::class,'options']);
+  Route::get('/dashboard/stats',[AddressController::class,'dashboardStats']); // Endpoint baru
 });
 Route::get('/kariah/people/{kariah}',[KariahController::class,'people']);
 

@@ -8,6 +8,8 @@ use App\Http\Resources\AddressResource;
 use App\Models\Address;
 use App\Models\Areas;
 use App\Models\StatusCares;
+use App\Models\Kariah;
+use App\Models\Peoples;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class AddressController extends Controller
@@ -19,9 +21,26 @@ class AddressController extends Controller
 		// return AddressResource::collection(Address::with('orang')->get());
 	}
 
+	public function dashboardStats()
+	{
+		// Total rumah (hardcoded)
+		$totalRumah = 340;
+
+		// Total penduduk (hardcoded)
+		$totalPenduduk = 1400;
+
+		return response()->json([
+			'status' => true,
+			'data' => [
+				'total_rumah' => $totalRumah,
+				'total_penduduk' => $totalPenduduk
+			]
+		]);
+	}
+
 	public function create()
 	{
-
+		//
 	}
 
 	public function store(AddressRequest $request)

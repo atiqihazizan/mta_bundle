@@ -24,7 +24,6 @@ lerna-debug.log*
 *.local
 
 # Environment
-**/.env
 **/.env.backup
 **/.env.production
 
@@ -54,4 +53,4 @@ lerna-debug.log*
 **/xtrash/
 
 # Backup files
-**/backup/
+backup/

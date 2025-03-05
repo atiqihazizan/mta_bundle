@@ -6,10 +6,12 @@ import {
 	EnvelopeIcon,
 	TicketIcon,
 	HeartIcon,
+	MapIcon,
 } from "@heroicons/react/24/outline";
 
 export const navigation = [
 	{ name: "Dashboard", to: "/", icon: HomeIcon },
+	{ name: "Peta", to: "/peta", icon: MapIcon },
 	{ name: "Perumahan", to: "/address", icon: BuildingOfficeIcon },
 	{ name: "Penduduk", to: "/peoples", icon: UsersIcon },
 	{ name: "Tabung", to: "/tabung", icon: CurrencyDollarIcon },
