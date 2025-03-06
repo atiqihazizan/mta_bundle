@@ -32,6 +32,7 @@ const router = createBrowserRouter([
 			{ path: "/address/new", element: <Resident /> },
 			{ path: "/address/:id", element: <Resident /> },
 			{ path: "/peoples", element: <Peoples /> },
+			{ path: "/people/new", element: <People /> },
 			{ path: "/people/:id", element: <People /> },
 			{ path: "/tabung", element: <Tabung /> },
 			{ path: "/tabung/new", element: <TabungForm /> },

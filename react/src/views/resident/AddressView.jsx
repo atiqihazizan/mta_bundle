@@ -1,5 +1,5 @@
-import { PencilIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { Floppy, HouseAdd, PencilSquare, PersonAdd, PersonFillAdd, Xbox, XLg } from "react-bootstrap-icons";
+import {  XMarkIcon } from "@heroicons/react/24/outline";
+import { Floppy,  PencilSquare } from "react-bootstrap-icons";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/Card";
@@ -11,7 +11,6 @@ export default function AddressView({ address, view, setView }) {
   const [flagView , setFlagView] = useState(view)
 	const [dataAddr,setDataAddr] = useState(address)
 	const [flagNew, setNew] = useState(address?.id ? false : true)
-	const [flagEdit, setEdit] = useState(false);
 	const [areas, setAreas] = useState(false);
 	const [cares, setCares] = useState(false);
 	const [error, setError] = useState(null);
@@ -31,13 +30,6 @@ export default function AddressView({ address, view, setView }) {
 		checkable: false,
 		nClassTable: "table align-middle text-sm text-gray-500",
 	};
-
-	const addrNew = () =>{
-		setNew(true)
-		setEdit(false)
-		setDataAddr(null);
-		navigate('/address/new')
-	}
 
 	const addrSave = (ev)=>{
 		ev.preventDefault();
@@ -64,9 +56,11 @@ export default function AddressView({ address, view, setView }) {
 			.then(({ data: result }) => {
 				if (result.errors) throw result.errors;
 				const newData = result.data;
+        console.log(newData)
 				setDataAddr(newData);
-				setEdit(false);
-				setNew(false);
+        setView(true)
+        setFlagView(true);
+        setNew(false)
 				if (flagNew) navigate(`/address/${newData.id}`);
 			})
 			.catch((err) => {
@@ -82,27 +76,14 @@ export default function AddressView({ address, view, setView }) {
 		});
 	},[])
   useEffect(()=>{ 
-    setDataAddr(address)
-    setFlagView(view)
-    console.log(flagView)
+      setDataAddr(address)
+      setFlagView(view)
   },[address,view])
 	return (
     <Card>
       <Card.Header title="Alamat Rumah">
         {flagView && (
           <div className="flex gap-2">
-            <TButton
-              nClasses="btn btn-sm btn-icon btn-clear btn-primary"
-              onClick={addrNew}
-            >
-              <PersonAdd className="w-5 h-5" />
-            </TButton>
-            <TButton
-              nClasses="btn btn-sm btn-icon btn-clear btn-primary"
-              onClick={addrNew}
-            >
-              <HouseAdd className="w-5 h-5" />
-            </TButton>
             <TButton
               nClasses="btn btn-sm btn-icon btn-clear btn-primary"
               onClick={() => {
@@ -122,10 +103,13 @@ export default function AddressView({ address, view, setView }) {
             >
               <Floppy className="w-5 h-5" />
             </TButton>
-            {!flagNew && (
+            {dataAddr.id && (
               <TButton
                 nClasses="btn btn-sm btn-danger btn-icon btn-clear"
-                onClick={() => setFlagView(false)}
+                onClick={() => {
+                  setFlagView(true)
+                  setView(true)
+                }}
               >
                 <XMarkIcon className="w-5 h-5" />
               </TButton>
@@ -148,7 +132,7 @@ export default function AddressView({ address, view, setView }) {
             },
             {
               label: "Koordinat",
-              text: `${dataAddr?.latlng || "-"}`,
+              text: `${dataAddr?.latlng?.split(',')?.map((o) => parseFloat(o).toFixed(6))?.join(', ') || "-"}`,
               class: false,
             },
           ]}

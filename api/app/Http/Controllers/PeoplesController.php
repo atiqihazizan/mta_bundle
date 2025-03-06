@@ -9,6 +9,7 @@ use App\Models\StatusEducations;
 use App\Models\StatusHealth;
 use App\Models\StatusJob;
 use App\Models\StatusMarriage;
+use App\Models\StatusRelation;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class PeoplesController extends Controller
@@ -24,7 +25,12 @@ class PeoplesController extends Controller
 
 	public function create()
 	{
-		//
+		$job = StatusJob::all();
+		$health = StatusHealth::all();
+		$married = StatusMarriage::all();
+		$education = StatusEducations::all();
+		$sibling = StatusRelation::all();
+		return response(compact('job','health','married','education','sibling'));
 	}
 
 	public function store(PeopleRequest $request)
@@ -39,8 +45,9 @@ class PeoplesController extends Controller
 		$married = StatusMarriage::all();
 		$education = StatusEducations::all();
 		// $people = $_pre->withoutRelations();
+		$sibling = StatusRelation::all();
 
-	return response(compact('people','job','health','married','education'));
+	return response(compact('people','job','health','married','education','sibling'));
 	}
 
 	public function update(PeopleRequest $request, Peoples $people)

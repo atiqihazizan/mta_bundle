@@ -32,9 +32,10 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::apiResource('kutipan', TabungController::class);
   Route::apiResource('voucher', VoucherController::class);
   Route::apiResource('peoples', PeoplesController::class);
+  Route::get('/allpeople', [PeoplesController::class,'getAll']);
+  Route::get('/newpeople', [PeoplesController::class,'create']);
   Route::get('/vpeople', [VoucherController::class,'listPeople']);
   Route::get('/nvchr', [TabungController::class,'nvchr']);
-  Route::get('/allpeople', [PeoplesController::class,'getAll']);
   Route::apiResource('jenazah', JenazahController::class);
   Route::get('/jenazah/report/{yrmth}',[JenazahController::class,'report']);
   Route::get('/options',[AddressController::class,'options']);

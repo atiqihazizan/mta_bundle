@@ -30,6 +30,7 @@ class AddressRequest extends FormRequest
 			'poskod' => 'required',
 			'area_id' => 'required',
 			'cares_id'=>'required',
+			'latlng'=>'required',
 		];
 	}
 	public function failedValidation(Validator $validator)
@@ -49,6 +50,7 @@ class AddressRequest extends FormRequest
 			'poskod.required' => 'poskod diperlukan',
 			'area_id.required' => 'Kawasan diperlukan',
 			'cares_id.required' => 'Pernah terima bantuan diperlukan',
+			'latlng.required' => 'Latitude dan longitude diperlukan',
 		];
 	}
 }

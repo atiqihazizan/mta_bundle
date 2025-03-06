@@ -18,6 +18,7 @@ function People() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const {id:kid} = useParams();
+  const [flagNew, setFlagNew] = useState(false);
 	const { showToast } = useStateContext();
 	const navigate = useNavigate()
 
@@ -49,7 +50,14 @@ function People() {
 
 		});
 	};
-	useEffect(() => getPeople(), []);
+	useEffect(() => {
+    if(kid) {
+      getPeople()
+    } else {
+      setFlagNew(true)
+      setLoading(false)
+    }
+  }, [kid]);
 
 	const onSubmit = (ev)=>{
 		const {id,...payload} = people;

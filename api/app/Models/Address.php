@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Address extends Model
 {
     use HasFactory;
-		protected $fillable = ['addr', 'addr2', 'addr3', 'poskod', 'area_id','cares_id', 'created_at', 'updated_at','created_by', 'updated_by'];
+		protected $fillable = ['addr', 'addr2', 'addr3', 'poskod', 'area_id','cares_id', 'latlng', 'created_at', 'updated_at','created_by', 'updated_by'];
 
     public function orang()
     {

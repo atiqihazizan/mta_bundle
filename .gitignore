@@ -54,3 +54,4 @@ lerna-debug.log*
 
 # Backup files
 backup/
+**/backup/
