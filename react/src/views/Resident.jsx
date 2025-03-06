@@ -124,7 +124,7 @@ function Resident() {
 						</div>
 						{address?.id && <Peoples
 							addr_id={id}
-							updated={setPeoples}
+							setPeoples={setPeoples}
 							title="Isi Rumah"
 							data={peoples}
 							cols="name,nokp,mobile,edustatus,sibling,employee,stshealthy"

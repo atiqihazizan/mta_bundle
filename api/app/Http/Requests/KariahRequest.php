@@ -24,6 +24,7 @@ class KariahRequest extends FormRequest
 	public function rules(): array
 	{
 		return [
+			'addr_id' => 'required',
 			'status' => 'required',
 			'relation' => 'required',
 			'tanggungan'  => 'nullable',
@@ -43,6 +44,7 @@ class KariahRequest extends FormRequest
 		return [
 			'status.required' => 'Status diperlukan',
 			'relation.required' => 'Hubungan diperlukan',
+      'addr_id.required' => 'Alamat diperlukan',
 		];
 	}
 }

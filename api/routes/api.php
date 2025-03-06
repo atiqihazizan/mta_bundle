@@ -31,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::apiResource('letter', LettersController::class);
   Route::apiResource('kutipan', TabungController::class);
   Route::apiResource('voucher', VoucherController::class);
+  Route::get('/peoples/{people}/detail', [PeoplesController::class, 'getDetailWithReferences']);
   Route::apiResource('peoples', PeoplesController::class);
   Route::get('/allpeople', [PeoplesController::class,'getAll']);
   Route::get('/newpeople', [PeoplesController::class,'create']);

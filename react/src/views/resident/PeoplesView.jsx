@@ -7,18 +7,18 @@ import FormC from "../../components/FormContext";
 import axiosClient from "../../axios";
 import Modal from "../../components/Modal";
 
-export default function PeopleView({ title, addr_id, data, cols, updated }) {
+export default function PeopleView({ title, addr_id, data, cols, setPeoples }) {
+  const { showToast } = useStateContext();
   const [columns, setColumns] = useState();
-  const [person, setPerson] = useState(false);
+  const [formData, setFormData] = useState({});
   const [showModal, setShowModal] = useState(false);
-  const [newPerson, setNewPerson] = useState({});
-  const [sibling, setRelation] = useState(false);
   const [error, setError] = useState(null);
+  const [statusData, setStatus] = useState([]);
   const [educData, setEduc] = useState([]);
   const [siblingData, setSibling] = useState([]);
   const [jobData, setJob] = useState([]);
   const [marriedData, setMarried] = useState([]);
-  const { showToast } = useStateContext();
+  const [isEdit, setIsEdit] = useState(false);
   const _cols = [
     {
       name: "No. K/P",
@@ -64,34 +64,108 @@ export default function PeopleView({ title, addr_id, data, cols, updated }) {
     nClassTable: "table-auto",
   };
 
-  const onEdit = (ev, id) => {
+  const onDelete = (ev, id) => {
     ev.preventDefault();
-    const _pre = data.filter((d) => d.id == id)[0];
+    
+    const deleteType = window.confirm('PERHATIAN: Sila pilih tindakan yang dikehendaki\n\nTekan OK - Rekod akan dikeluarkan dari alamat ini sahaja. Maklumat peribadi dan kariah masih disimpan dalam sistem.\n\nTekan BATAL - Rekod akan dipadamkan secara kekal dari sistem termasuk maklumat peribadi dan kariah.');
+    
+    if (!window.confirm('PENGESAHAN TERAKHIR:\n\nAdakah anda pasti untuk melaksanakan tindakan ini? Tindakan ini tidak boleh dibatalkan selepas dilaksanakan.')) {
+      return;
+    }
+
+    const _pre = data.find((d) => d.id === id);
+    
+    // Semak jika rekod dijumpai dan ada ppl_id
+    if (!_pre || !_pre.ppl_id) {
+      showToast('Ralat: Rekod tidak dijumpai atau tidak lengkap', 'error');
+      return;
+    }
+
     axiosClient
-      .get("/kariah/people/" + id)
-      .then(({ data: { relation, status, self } }) => {
-        setRelation(relation);
-        setPerson({ ...self, name: _pre.name });
+      .delete(`/peoples/${_pre.ppl_id}`, {
+        params: {
+          deleteType: deleteType ? 'address' : 'permanent'
+        }
+      })
+      .then(({ data: result }) => {
+        console.log(result);
+        showToast(result.message || 'Data berjaya dipadam');
+        // Kemaskini data dalam bentuk array
+        const newData = data.filter(item => item.id !== id);
+        setPeoples(newData); // Guna setPeoples untuk kemaskini data di parent
+      })
+      .catch((err) => {
+        console.error('Error deleting data:', err);
+        showToast('Ralat semasa memadam data: ' + (err.response?.data?.message || err.message), 'error');
       });
   };
+
+  const onEdit = (ev, id) => {
+    ev.preventDefault();
+    const _pre = data.find((d) => d.id === id);
+    axiosClient
+      .get(`/peoples/${_pre.ppl_id}/detail`)
+      .then(({ data: { people, kariahData } }) => {
+        // Gabungkan data people dan kariah
+        setFormData({
+          ...people,
+          id: _pre.ppl_id, // Guna people ID
+          name: _pre.name,
+          addr_id: addr_id,  // Guna addr_id dari props
+          relation: kariahData?.relation,
+          status: kariahData?.status,
+          tanggungan: kariahData?.tanggungan,
+          penama: kariahData?.penama
+        });
+        setIsEdit(true);
+        setShowModal(true);
+      })
+      .catch((err) => {
+        console.error('Error fetching data:', err);
+        showToast('Ralat semasa mengambil data', 'error');
+      });
+  };
+
   const onSave = (ev) => {
-    const { name, id, ...payload } = person;
-    const _pre = data.filter((d) => d.id == id)[0];
     ev.preventDefault();
     setError(null);
-    axiosClient
-      .put("/kariah/" + id, payload)
+
+    const saveData = {
+      addr_id: addr_id,
+      ...formData
+    };
+    
+    const endpoint = isEdit 
+      ? `/peoples/${formData.id}` 
+      : '/peoples';
+    const method = isEdit ? 'put' : 'post';
+
+    axiosClient[method](endpoint, saveData)
       .then(({ data: result }) => {
         if (result.errors) throw result.errors;
-        showToast(`Kemaskini maklumat ${name}`);
-        updated(result?.data);
-        setPerson(false);
+        
+        const successMsg = isEdit ? 'dikemaskini' : 'ditambah';
+        showToast(`Data ${result?.data?.name} berjaya ${successMsg}`);
+        
+        if (isEdit) {
+          const newData = data.map(item => 
+            item.ppl_id === formData.id ? result.data : item
+          );
+          setPeoples(newData);
+        } else {
+          setPeoples([...data, result?.data]);
+        }
+
+        setShowModal(false);
+        setFormData({});
+        setIsEdit(false);
       })
       .catch((err) => {
         setError(err);
         console.error(err);
       });
   };
+
   useEffect(() => {
     const ar = cols.split(",");
     // const aCol = _cols.filter((f) => ar.includes(f.field)).map((c) => c);
@@ -102,7 +176,7 @@ export default function PeopleView({ title, addr_id, data, cols, updated }) {
         nClass: "w-[100px] text-left",
         nClassRow: "text-center text-sm font-normal text-gray-700",
         render: ({ id: kid, ppl_id: id, stshealthy }) =>
-          stshealthy === 1 ? (
+          stshealthy === 2 ? (
             <i className="ki-solid ki-pulse text-danger"></i>
           ) : null,
       },
@@ -121,7 +195,7 @@ export default function PeopleView({ title, addr_id, data, cols, updated }) {
         nClassRow: "px-3",
         render: ({ id: kid, ppl_id: id }) => (
           <div className="flex gap-0.5">
-            <TButton
+            {/* <TButton
               nClasses="btn btn-sm btn-icon btn-clear btn-primary"
               to={`/people/${id}`}
             >
@@ -130,12 +204,18 @@ export default function PeopleView({ title, addr_id, data, cols, updated }) {
                 <span className="path2"></span>
                 <span className="path3"></span>
               </i>
-            </TButton>
+            </TButton> */}
             <TButton
               nClasses="btn btn-sm btn-icon btn-clear btn-primary"
               onClick={(ev) => onEdit(ev, kid)}
             >
-              <i className="ki-outline ki-setting-2"></i>
+              <i className="ki-outline ki-user-edit"></i>
+            </TButton>
+            <TButton
+              nClasses="btn btn-sm btn-icon btn-clear btn-danger"
+              onClick={(ev) => onDelete(ev, kid)}
+            >
+              <i className="ki-outline ki-trash"></i>
             </TButton>
           </div>
         ),
@@ -144,36 +224,13 @@ export default function PeopleView({ title, addr_id, data, cols, updated }) {
     setColumns(myCols);
   }, []);
   
-  const onNewPerson = (ev) => {
-    ev.preventDefault();
-    setError(null);
-    const newData = {
-      ...newPerson,
-      addr_id: addr_id,
-    };
 
-    console.log(newData);
-    return;
-    axiosClient
-      .post("/peoples", newPerson)
-      .then(({ data: result }) => {
-        if (result.errors) throw result.errors;
-        showToast(`Tambah ahli baru ${result?.data?.name}`);
-        updated(result?.data);
-        setShowModal(false);
-        setNewPerson({});
-      })
-      .catch((err) => {
-        setError(err);
-        console.error(err);
-      });
-  };
 
   useEffect(() => {
     if (showModal) {
       axiosClient
         .get("/newpeople")
-        .then(({ data: { education, job, married, sibling } }) => {
+        .then(({ data: { education, job, married, sibling, status } }) => {
           setEduc(() =>
             education.reduce((a, c) => {
               return [...a, { key: c.id, value: c.name }];
@@ -194,6 +251,11 @@ export default function PeopleView({ title, addr_id, data, cols, updated }) {
               return [...a, { key: c.id, value: c.name }];
             }, [])
           );
+          setStatus(() =>
+            status.reduce((a, c) => {
+              return [...a, { key: c.id, value: c.name }];
+            }, [])
+          );
         });
     }
   }, [showModal]);
@@ -211,25 +273,24 @@ export default function PeopleView({ title, addr_id, data, cols, updated }) {
             </TButton>
           </div>
         </Card.Header>
-        {!person && (
-          <Card.Table
-            columns={columns}
-            data={data}
-            oOption={{ checkable: false }}
-          />
-        )}
+        <Card.Table
+          columns={columns}
+          data={data}
+          oOption={{ checkable: false }}
+        />
       </Card>
 
       <Modal
         show={showModal}
         onClose={() => {
           setShowModal(false);
-          setNewPerson({});
+          setFormData({});
+          setIsEdit(false);
         }}
-        title="Tambah Ahli Baru"
+        title={isEdit ? 'Kemaskini Ahli' : 'Tambah Ahli Baru'}
       >
-        <form onSubmit={(ev) => onNewPerson(ev)}>
-          <FormC data={newPerson} setValue={setNewPerson} error={error}>
+        <form onSubmit={(ev) => onSave(ev)}>
+          <FormC data={formData} setValue={setFormData} error={error}>
             <div className="flex justify-between gap-7 mb-4">
               <div className="flex flex-col gap-5 w-full">
                 <FormC.LText
@@ -262,9 +323,9 @@ export default function PeopleView({ title, addr_id, data, cols, updated }) {
                   text=""
                   field={"stshealthy"}
                   text2="Sakit Berpanjangan"
-                  val={1}
+                  val={2}
                 />
-                {newPerson?.stshealthy > 0 && (
+                {formData?.stshealthy === 2 && (
                   <FormC.LText
                     text={"Penyakit yang dihidap"}
                     field={"penyakit"}
@@ -276,14 +337,26 @@ export default function PeopleView({ title, addr_id, data, cols, updated }) {
                   text2="Persara pencen"
                   val={1}
                 />
-                {newPerson?.stspencen > 0 && (
+                {formData?.stspencen > 0 && (
                   <FormC.LText text={"Pesara sebagai"} field={"pencen"} />
                 )}
                 <FormC.LSelect
                   text={"Hubungan"}
-                  field={"sibling"}
+                  field={"relation"}
                   keyval="key,value"
                   listArr={siblingData}
+                />
+                <FormC.LSelect
+                  text={"Status"}
+                  field={"status"}
+                  keyval="key,value"
+                  listArr={statusData}
+                />
+                <FormC.LCheckbox
+                  text=""
+                  field={"tanggungan"}
+                  text2="Sebagai Tanggungan"
+                  val={1}
                 />
               </div>
             </div>

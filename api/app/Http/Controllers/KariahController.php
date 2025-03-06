@@ -49,7 +49,7 @@ class KariahController extends Controller
 		for ($i = 0; $i < $_kar->count(); $i++) {
 			$_arr = collect($_kar[$i]);
 			$_ppl = $_arr['people'];
-			$_hlt = $_arr['people']['healthy']['name'];
+			$_hlt = $_arr['people']['healthy']['name'] ?? '';
 			$_mrr = $_arr['people']['married']['name'] ?? '';
 			$_edu = $_arr['people']['education']['name'] ?? '';
 			$_job = $_arr['people']['job']['name'] ?? '';
