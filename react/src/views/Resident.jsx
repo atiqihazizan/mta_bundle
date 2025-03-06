@@ -26,8 +26,12 @@ L.Icon.Default.mergeOptions({
 function Resident() {
 	const {id} = useParams();
 	const [peoples, setPeoples] = useState([]);
-	const [address, setAddress] = useState();
+	const [address, setAddress] = useState({
+    cares_id:1,
+    area_id:1,
+  });
 	const [loading, setLoading] = useState(id ? true : false);
+  const [flagView, setFlagView] = useState(true);
   const [markerPosition, setMarkerPosition] = useState({
     lat: import.meta.env.VITE_MAP_CENTER_LAT,
     lng: import.meta.env.VITE_MAP_CENTER_LNG
@@ -38,6 +42,15 @@ function Resident() {
   };
   const zoom = import.meta.env.VITE_MAP_ZOOM;
   
+  // Fungsi untuk mengemaskini koordinat
+  const updateCoordinates = (newAddress) => {
+    setAddress(newAddress);
+    if (newAddress?.latlng) {
+      const [lat, lng] = newAddress.latlng.split(',').map(Number);
+      setMarkerPosition({ lat, lng });
+    }
+  };
+
   const handleMarkerDrag = (e) => {
     const { lat, lng } = e.target.getLatLng();
     setMarkerPosition({ lat, lng });
@@ -51,13 +64,13 @@ function Resident() {
       setAddress(updatedAddress);
       
       // Hantar update ke server
-      axiosClient.put(`/address/${address.id}`, {
-        latlng: `${lat},${lng}`
-      }).then(({data}) => {
-        console.log('Koordinat telah dikemaskini:', data);
-      }).catch(err => {
-        console.error('Ralat ketika mengemaskini koordinat:', err);
-      });
+      // axiosClient.put(`/address/${address.id}`, {
+      //   latlng: `${lat},${lng}`
+      // }).then(({data}) => {
+      //   console.log('Koordinat telah dikemaskini:', data);
+      // }).catch(err => {
+      //   console.error('Ralat ketika mengemaskini koordinat:', err);
+      // });
     }
   };
 
@@ -74,7 +87,19 @@ function Resident() {
 			setPeoples(people);
 		});
 	};
-	useEffect(() => id && getResidency(), []);
+	useEffect(() => {
+    if(id) {
+      getResidency();
+      setFlagView(true);
+    } else {
+      setFlagView(false);
+      setAddress({
+        poskod:'14000',
+        cares_id:1,
+        latlng: `${markerPosition.lat},${markerPosition.lng}`
+      })
+    }
+  }, [id]);
 
 	return (
 		<PageComponent title="Maklumat Rumah dan Penghuni" buttons={
@@ -89,7 +114,7 @@ function Resident() {
 				{!loading && (
 					<div className="flex flex-col gap-6">
 						<div className="grid grid-cols-3 gap-6">
-							<AddressView address={address} />
+							<AddressView address={address} view={flagView} setView={setFlagView} />
               <div className="col-span-2 maps h-[400px]">
                 <MapContainer 
                   center={[center.lat, center.lng]} 
@@ -102,7 +127,7 @@ function Resident() {
                   />
                   <Marker 
                     position={[markerPosition.lat, markerPosition.lng]}
-                    draggable={true}
+                    draggable={flagView  === false ? true : false}
                     eventHandlers={{
                       dragend: handleMarkerDrag,
                     }}
