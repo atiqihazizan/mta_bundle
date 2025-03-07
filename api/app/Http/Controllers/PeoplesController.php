@@ -234,23 +234,40 @@ class PeoplesController extends Controller
 		try {
 			\DB::beginTransaction();
 
+			// Semak jenis delete
 			$deleteType = $request->query('deleteType', 'permanent');
+			if (!in_array($deleteType, ['address', 'permanent'])) {
+				throw new \Exception('Jenis delete tidak sah');
+			}
+
+			// Dapatkan rekod kariah
 			$kariah = $people->kariah()->first();
 
 			if ($deleteType === 'address') {
-				// Padam dari alamat sahaja
-				if ($kariah) {
-					$kariah->addr_id = null;
-					$kariah->save();
+				// Semak jika kariah wujud
+				if (!$kariah) {
+					throw new \Exception('Rekod kariah tidak dijumpai');
 				}
+
+				// Semak jika sudah tiada alamat
+				if (!$kariah->addr_id) {
+					throw new \Exception('Rekod ini sudah tidak ada dalam alamat');
+				}
+
+				// Padam dari alamat sahaja
+				$kariah->addr_id = null;
+				$kariah->save();
 				$message = 'Data berjaya dipadam dari alamat';
 			} else {
+				// Semak jika ada rekod yang bergantung
+				// TODO: Tambah semakan untuk rekod yang bergantung jika perlu
+
 				// Padam kekal (people & kariah)
 				if ($kariah) {
 					$kariah->delete();
 				}
 				$people->delete();
-				$message = 'Data berjaya dipadam kekal';
+				$message = 'Data berjaya dipadam terus';
 			}
 
 			\DB::commit();

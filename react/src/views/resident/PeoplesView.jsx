@@ -7,7 +7,7 @@ import FormC from "../../components/FormContext";
 import axiosClient from "../../axios";
 import Modal from "../../components/Modal";
 
-export default function PeopleView({ title, addr_id, data, cols, setPeoples }) {
+export default function PeopleView({ title, addr_id, data, cols }) {
   const { showToast } = useStateContext();
   const [columns, setColumns] = useState();
   const [formData, setFormData] = useState({});
@@ -19,6 +19,12 @@ export default function PeopleView({ title, addr_id, data, cols, setPeoples }) {
   const [jobData, setJob] = useState([]);
   const [marriedData, setMarried] = useState([]);
   const [isEdit, setIsEdit] = useState(false);
+  const [senaraiFamili, setSenaraiFamili] = useState(data || []);
+
+  useEffect(() => {
+    setSenaraiFamili(data || []);
+  }, [data]);
+
   const _cols = [
     {
       name: "No. K/P",
@@ -64,39 +70,40 @@ export default function PeopleView({ title, addr_id, data, cols, setPeoples }) {
     nClassTable: "table-auto",
   };
 
-  const onDelete = (ev, id) => {
+  const onDelete = (ev, id, ppl_id) => {
     ev.preventDefault();
     
-    const deleteType = window.confirm('PERHATIAN: Sila pilih tindakan yang dikehendaki\n\nTekan OK - Rekod akan dikeluarkan dari alamat ini sahaja. Maklumat peribadi dan kariah masih disimpan dalam sistem.\n\nTekan BATAL - Rekod akan dipadamkan secara kekal dari sistem termasuk maklumat peribadi dan kariah.');
-    
-    if (!window.confirm('PENGESAHAN TERAKHIR:\n\nAdakah anda pasti untuk melaksanakan tindakan ini? Tindakan ini tidak boleh dibatalkan selepas dilaksanakan.')) {
+    // Dapatkan jenis delete dari pengguna
+    const deleteType = window.confirm(
+      'PERHATIAN: Sila pilih tindakan yang dikehendaki\n\n' +
+      'Tekan OK - Keluarkan dari alamat ini sahaja\n' +
+      'Tekan BATAL - Padam rekod terus dari sistem'
+    );
+
+    // Dapatkan pengesahan terakhir
+    if (!window.confirm('Adakah anda pasti untuk melaksanakan tindakan ini?')) {
       return;
     }
 
-    const _pre = data.find((d) => d.id === id);
-    
-    // Semak jika rekod dijumpai dan ada ppl_id
-    if (!_pre || !_pre.ppl_id) {
-      showToast('Ralat: Rekod tidak dijumpai atau tidak lengkap', 'error');
-      return;
-    }
-
+    // Hantar permintaan delete ke backend guna ppl_id
     axiosClient
-      .delete(`/peoples/${_pre.ppl_id}`, {
+      .delete(`/peoples/${ppl_id}`, {
         params: {
           deleteType: deleteType ? 'address' : 'permanent'
         }
       })
       .then(({ data: result }) => {
-        console.log(result);
-        showToast(result.message || 'Data berjaya dipadam');
-        // Kemaskini data dalam bentuk array
-        const newData = data.filter(item => item.id !== id);
-        setPeoples(newData); // Guna setPeoples untuk kemaskini data di parent
+        // Papar mesej kejayaan dari backend
+        showToast(result.message);
+        
+        // Kemaskini senarai famili guna kariah id
+        setSenaraiFamili(prev => 
+          prev.filter(item => item.id !== id)
+        );
       })
       .catch((err) => {
-        console.error('Error deleting data:', err);
-        showToast('Ralat semasa memadam data: ' + (err.response?.data?.message || err.message), 'error');
+        // Papar mesej ralat dari backend
+        showToast(err.response?.data?.message || 'Ralat semasa memadam data', 'error');
       });
   };
 
@@ -148,12 +155,26 @@ export default function PeopleView({ title, addr_id, data, cols, setPeoples }) {
         showToast(`Data ${result?.data?.name} berjaya ${successMsg}`);
         
         if (isEdit) {
-          const newData = data.map(item => 
+          // Kemaskini senarai famili untuk edit
+          const newData = senaraiFamili.map(item => 
             item.ppl_id === formData.id ? result.data : item
           );
-          setPeoples(newData);
+          setSenaraiFamili(newData);
         } else {
-          setPeoples([...data, result?.data]);
+          // // Format data baru untuk seragamkan struktur
+          // const newPerson = {
+          //   ...result.data,
+          //   id: result.data.kariah_id, // Guna kariah_id sebagai id
+          //   ppl_id: result.data.id, // Simpan id people sebagai ppl_id
+          //   nokp: result.data.nokp,
+          //   name: result.data.name,
+          //   mobile: result.data.mobile,
+          //   edustatus: result.data.edustatus,
+          //   sibling: result.data.sibling,
+          //   employee: result.data.employee,
+          //   stshealthy: result.data.stshealthy
+          // };
+          setSenaraiFamili([...senaraiFamili, result.data ]);
         }
 
         setShowModal(false);
@@ -195,16 +216,6 @@ export default function PeopleView({ title, addr_id, data, cols, setPeoples }) {
         nClassRow: "px-3",
         render: ({ id: kid, ppl_id: id }) => (
           <div className="flex gap-0.5">
-            {/* <TButton
-              nClasses="btn btn-sm btn-icon btn-clear btn-primary"
-              to={`/people/${id}`}
-            >
-              <i className="ki-outline ki-user-edit">
-                <span className="path1"></span>
-                <span className="path2"></span>
-                <span className="path3"></span>
-              </i>
-            </TButton> */}
             <TButton
               nClasses="btn btn-sm btn-icon btn-clear btn-primary"
               onClick={(ev) => onEdit(ev, kid)}
@@ -213,7 +224,7 @@ export default function PeopleView({ title, addr_id, data, cols, setPeoples }) {
             </TButton>
             <TButton
               nClasses="btn btn-sm btn-icon btn-clear btn-danger"
-              onClick={(ev) => onDelete(ev, kid)}
+              onClick={(ev) => onDelete(ev, kid, id)}
             >
               <i className="ki-outline ki-trash"></i>
             </TButton>
@@ -275,7 +286,7 @@ export default function PeopleView({ title, addr_id, data, cols, setPeoples }) {
         </Card.Header>
         <Card.Table
           columns={columns}
-          data={data}
+          data={senaraiFamili}
           oOption={{ checkable: false }}
         />
       </Card>
