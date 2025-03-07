@@ -19,8 +19,6 @@ import LetterForm from "./views/letter/form";
 import Voucher from "./views/Voucher";
 import VoucherForm from "./views/voucher/form";
 import JenazahForm from "./views/jenazah/form";
-import People from "./views/resident/People";
-
 const router = createBrowserRouter([
 	{
 		path: "/",
@@ -32,8 +30,7 @@ const router = createBrowserRouter([
 			{ path: "/address/new", element: <Resident /> },
 			{ path: "/address/:id", element: <Resident /> },
 			{ path: "/peoples", element: <Peoples /> },
-			{ path: "/people/new", element: <People /> },
-			{ path: "/people/:id", element: <People /> },
+
 			{ path: "/tabung", element: <Tabung /> },
 			{ path: "/tabung/new", element: <TabungForm /> },
 			{ path: "/tabung/:tid", element: <TabungForm /> },
