@@ -24,11 +24,21 @@ lerna-debug.log*
 *.local
 
 # Environment
+**/.env
 **/.env.backup
 **/.env.production
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
 
 # Storage
 /api/storage/*.key
+/api/storage/app/public/*
+/api/storage/framework/cache/*
+/api/storage/framework/sessions/*
+/api/storage/framework/views/*
+/api/storage/logs/*
 
 # Laravel
 /api/.phpunit.cache
@@ -51,7 +61,35 @@ lerna-debug.log*
 
 # Temporary files/folders
 **/xtrash/
+**/tmp/
+**/temp/
+**/.tmp/
+**/.temp/
 
 # Backup files
 backup/
 **/backup/
+*.bak
+*.backup
+*.old
+
+# Mobile app specific
+/mobile/**/build/
+/mobile/**/.dart_tool/
+/mobile/**/.flutter-plugins
+/mobile/**/.flutter-plugins-dependencies
+/mobile/**/.packages
+/mobile/**/ios/Pods/
+/mobile/**/android/.gradle/
+/mobile/**/key.properties
+/mobile/**/*.jks
+
+# Testing and coverage
+**/coverage/
+**/.nyc_output/
+**/cypress/videos/
+**/cypress/screenshots/
+
+# System Files
+**/.DS_Store
+**/Thumbs.db
