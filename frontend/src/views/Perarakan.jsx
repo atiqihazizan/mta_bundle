@@ -8,13 +8,29 @@ import {
   Switch,
   Typography,
 } from "@material-tailwind/react";
-import { PencilIcon, PlusIcon, PrinterIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { MapPinIcon, PencilIcon, PlusIcon, PrinterIcon, TrashIcon } from "@heroicons/react/24/outline";
 import PageComponent from "../components/PageComponent";
 import Modal from "../components/Modal";
 import PerarakanMap from "../components/Maps/PerarakanMap";
 import { useStateContext } from "../contexts/ContextProvider";
 import axiosClient from "../axios";
 import { printRoute } from "../utils/printPerarakan";
+
+const navigateRoute = (route) => {
+  const coords = route.coords;
+  if (!coords || coords.length < 2) return;
+  const origin = `${coords[0][0]},${coords[0][1]}`;
+  const destination = `${coords[coords.length - 1][0]},${coords[coords.length - 1][1]}`;
+  // Sample max 8 waypoints secara sekata dari titik perantara
+  const middle = coords.slice(1, -1);
+  const step = Math.max(1, Math.floor(middle.length / 8));
+  const sampled = middle.filter((_, i) => i % step === 0).slice(0, 8);
+  const waypointsParam = sampled.length
+    ? `&waypoints=${sampled.map((c) => `${c[0]},${c[1]}`).join('|')}`
+    : '';
+  const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypointsParam}&travelmode=walking`;
+  window.open(url, '_blank');
+};
 
 export default function Perarakan() {
   const { showToast } = useStateContext();
@@ -186,6 +202,15 @@ export default function Perarakan() {
                         color="green"
                         onChange={() => toggleVisible(route)}
                       />
+                      <IconButton
+                        variant="text"
+                        size="sm"
+                        color="green"
+                        title="Navigate di Google Maps"
+                        onClick={() => navigateRoute(route)}
+                      >
+                        <MapPinIcon className="h-4 w-4" />
+                      </IconButton>
                       <IconButton
                         variant="text"
                         size="sm"
