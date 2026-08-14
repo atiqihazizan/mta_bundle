@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    outDir: "../api/public/dist",
+    outDir: "../backend/public/dist",
     emptyOutDir: true,
     rollupOptions: {
       output: {

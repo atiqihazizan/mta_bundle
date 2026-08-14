@@ -10,6 +10,7 @@ use App\Http\Controllers\JenazahController;
 use App\Http\Controllers\KariahController;
 use App\Http\Controllers\LettersController;
 use App\Http\Controllers\PeoplesController;
+use App\Http\Controllers\PerarakanController;
 use App\Http\Controllers\VoucherController;
 
 /*
@@ -38,6 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/vpeople', [VoucherController::class,'listPeople']);
   Route::get('/nvchr', [TabungController::class,'nvchr']);
   Route::apiResource('jenazah', JenazahController::class);
+  Route::apiResource('perarakan', PerarakanController::class);
   Route::get('/jenazah/report/{yrmth}',[JenazahController::class,'report']);
   Route::get('/options',[AddressController::class,'options']);
   Route::get('/dashboard/stats',[AddressController::class,'dashboardStats']); // Endpoint baru

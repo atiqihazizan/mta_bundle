@@ -8,6 +8,7 @@ import Jenazah from "./views/Jenazah";
 import Tabung from "./views/Tabung";
 import Maintainance from "./views/Maintainance";
 import Peta from "./views/Peta";
+import Perarakan from "./views/Perarakan";
 
 import GuestLayout from "./components/GuestLayout";
 import Login from "./views/Login";
@@ -45,6 +46,7 @@ const router = createBrowserRouter([
 			{ path: "/voucher/new", element: <VoucherForm /> },
 			{ path: "/voucher/:vid", element: <VoucherForm /> },
 			{ path: "/peta", element: <Peta /> },
+			{ path: "/perarakan", element: <Perarakan /> },
 		],
 	},
 	{

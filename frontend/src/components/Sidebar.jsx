@@ -20,4 +20,9 @@ export const routes = [
     name: "Peta",
     icon: MapIcon,
   },
+  {
+    path: "/perarakan",
+    name: "Perarakan",
+    icon: MapIcon,
+  },
 ];

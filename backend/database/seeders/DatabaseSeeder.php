@@ -31,7 +31,8 @@ class DatabaseSeeder extends Seeder
             StatusMarriageSeeder::class,
             StatusPenghuniSeeder::class,
             StatusRelationSeeder::class,
-            StatusRumahSeeder::class
+            StatusRumahSeeder::class,
+            PerarakanSeeder::class
         ]);
     }
 }
