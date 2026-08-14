@@ -249,41 +249,48 @@ function buildMap(zoom, lyrs) {
 
   const N2 = 1 << zoom;
 
-  function lngFrac(lng) { return (lng + 180) / 360 * N2; }
-  function latFrac(lat) {
+  // Global pixel coordinates (scale with zoom — key to consistent text size)
+  function lngPx(lng) { return (lng + 180) / 360 * N2 * TS; }
+  function latPx(lat) {
     const r = lat * Math.PI / 180;
-    return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * N2;
-  }
-  function lngPx(lng) { return lngFrac(lng) * TS; }
-  function latPx(lat) { return latFrac(lat) * TS; }
-
-  const txMin = Math.floor(lngFrac(minLng)) - PAD;
-  const txMax = Math.floor(lngFrac(maxLng)) + PAD;
-  const tyMin = Math.floor(latFrac(maxLat)) - PAD;
-  const tyMax = Math.floor(latFrac(minLat)) + PAD;
-
-  const svgW = (txMax - txMin + 1) * TS;
-  const svgH = (tyMax - tyMin + 1) * TS;
-  const origPx = txMin * TS, origPy = tyMin * TS;
-
-  function toSvg(lat, lng) {
-    return { x: lngPx(lng) - origPx, y: latPx(lat) - origPy };
+    return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * N2 * TS;
   }
 
-  // Stroke size — cukup jelas tapi tidak tutup teks jalan pada tiles
-  const sw = Math.max(6, svgW / 160);
+  // Route pixel bounds
+  const pxXs = coords.map(c => lngPx(c[1]));
+  const pxYs = coords.map(c => latPx(c[0]));
+  const pxMinX = Math.min(...pxXs), pxMaxX = Math.max(...pxXs);
+  const pxMinY = Math.min(...pxYs), pxMaxY = Math.max(...pxYs);
 
-  // Clear and rebuild SVG
+  // Margin: 25% of route span — stays proportional at any zoom
+  const mX = (pxMaxX - pxMinX) * 0.25;
+  const mY = (pxMaxY - pxMinY) * 0.25;
+
+  const vx0 = pxMinX - mX, vy0 = pxMinY - mY;
+  const vx1 = pxMaxX + mX, vy1 = pxMaxY + mY;
+  const vW  = vx1 - vx0,   vH  = vy1 - vy0;
+
+  // Tile range that covers the viewport
+  const txMin = Math.floor(vx0 / TS), txMax = Math.floor(vx1 / TS);
+  const tyMin = Math.floor(vy0 / TS), tyMax = Math.floor(vy1 / TS);
+
+  // Fixed stroke in viewport units — stays same physical size at all zooms
+  const sw = vW / 80;
+
+  // SVG uses global pixel space; viewBox clips to route area
   const svg = document.getElementById('map-svg');
   svg.innerHTML = '';
-  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+  svg.setAttribute('viewBox', `${vx0} ${vy0} ${vW} ${vH}`);
 
-  // ── Tiles ──────────────────────────────────────────────────────────────────
+  // Route point in global pixels
+  function toSvg(lat, lng) { return { x: lngPx(lng), y: latPx(lat) }; }
+
+  // ── Tiles (placed at global pixel positions) ──────────────────────────────
   for (let ty = tyMin; ty <= tyMax; ty++) {
     for (let tx = txMin; tx <= txMax; tx++) {
       const s = (tx + ty) % 4;
       const img = mk('image', {
-        x: (tx - txMin) * TS, y: (ty - tyMin) * TS,
+        x: tx * TS, y: ty * TS,
         width: TS, height: TS,
         href: `https://mt${s}.google.com/vt/lyrs=${lyrs}&x=${tx}&y=${ty}&z=${zoom}`,
         'data-tx': tx, 'data-ty': ty, 'data-s': s
@@ -357,31 +364,32 @@ function buildMap(zoom, lyrs) {
   pinMarker(coords[0][0], coords[0][1], '#16a34a', 'A', 'MULA');
   pinMarker(coords[coords.length-1][0], coords[coords.length-1][1], '#dc2626', 'B', 'TAMAT');
 
-  // ── Scale bar ──────────────────────────────────────────────────────────────
+  // ── Scale bar (in global pixel space) ────────────────────────────────────
   const cosLat = Math.cos(((minLat+maxLat)/2) * Math.PI/180);
   const mPerPx = (40075016.686 * cosLat) / (N2 * TS);
   const barM   = zoom >= 18 ? 50 : zoom >= 16 ? 200 : zoom === 15 ? 500 : 1000;
   const barPx  = barM / mPerPx;
-  const bx = 20, by = svgH - 20;
-  const fs = sw * 1.1;
+  const bx = vx0 + sw * 0.8, by = vy1 - sw * 0.8;
+  const fs = sw * 1.0;
 
   const sg = document.createElementNS(NS, 'g');
-  sg.appendChild(mk('rect', { x: bx-6, y: by-fs*1.8, width: barPx+fs*4, height: fs*2.4, rx: 4, fill: 'rgba(255,255,255,0.85)' }));
-  sg.appendChild(mk('line', { x1:bx, y1:by, x2:bx+barPx, y2:by, stroke:'#1e293b', 'stroke-width': sw*0.22, 'stroke-linecap':'square' }));
-  sg.appendChild(mk('line', { x1:bx, y1:by-sw*0.4, x2:bx, y2:by+sw*0.4, stroke:'#1e293b', 'stroke-width':sw*0.16 }));
-  sg.appendChild(mk('line', { x1:bx+barPx, y1:by-sw*0.4, x2:bx+barPx, y2:by+sw*0.4, stroke:'#1e293b', 'stroke-width':sw*0.16 }));
-  const st = mk('text', { x:bx+barPx/2, y:by-fs*0.4, 'text-anchor':'middle', fill:'#1e293b', 'font-size':fs, 'font-weight':'600' });
+  sg.appendChild(mk('rect', { x: bx-sw*0.4, y: by-fs*2, width: barPx+fs*3.5, height: fs*2.6, rx: sw*0.3, fill: 'rgba(255,255,255,0.88)' }));
+  sg.appendChild(mk('line', { x1:bx, y1:by, x2:bx+barPx, y2:by, stroke:'#1e293b', 'stroke-width': sw*0.18, 'stroke-linecap':'square' }));
+  sg.appendChild(mk('line', { x1:bx,       y1:by-sw*0.3, x2:bx,       y2:by+sw*0.3, stroke:'#1e293b', 'stroke-width':sw*0.14 }));
+  sg.appendChild(mk('line', { x1:bx+barPx, y1:by-sw*0.3, x2:bx+barPx, y2:by+sw*0.3, stroke:'#1e293b', 'stroke-width':sw*0.14 }));
+  const st = mk('text', { x:bx+barPx/2, y:by-fs*0.3, 'text-anchor':'middle', fill:'#1e293b', 'font-size':fs, 'font-weight':'600' });
   st.textContent = barM >= 1000 ? (barM/1000)+' km' : barM+' m';
   sg.appendChild(st);
   svg.appendChild(sg);
 
-  // ── Compass ────────────────────────────────────────────────────────────────
-  const cr = sw * 2, cx = svgW - cr - 10, cy2 = svgH - cr - 10;
+  // ── Compass ───────────────────────────────────────────────────────────────
+  const cr = sw * 1.8;
+  const cx = vx1 - cr - sw * 0.6, cy2 = vy1 - cr - sw * 0.6;
   const cg = document.createElementNS(NS, 'g');
-  cg.appendChild(mk('circle', { cx, cy: cy2, r: cr, fill:'rgba(255,255,255,0.9)', stroke:'#94a3b8', 'stroke-width': sw*0.08 }));
-  cg.appendChild(mk('polygon', { points:`${cx},${cy2-cr*0.82} ${cx-cr*0.22},${cy2} ${cx+cr*0.22},${cy2}`, fill:'#1e3a5f' }));
-  cg.appendChild(mk('polygon', { points:`${cx},${cy2+cr*0.82} ${cx-cr*0.22},${cy2} ${cx+cr*0.22},${cy2}`, fill:'#cbd5e1' }));
-  const cN = mk('text', { x:cx, y:cy2-cr*0.88, 'text-anchor':'middle', fill:'#1e3a5f', 'font-size':cr*0.46, 'font-weight':'700' });
+  cg.appendChild(mk('circle', { cx, cy: cy2, r: cr, fill:'rgba(255,255,255,0.9)', stroke:'#94a3b8', 'stroke-width': sw*0.07 }));
+  cg.appendChild(mk('polygon', { points:`${cx},${cy2-cr*0.8} ${cx-cr*0.22},${cy2} ${cx+cr*0.22},${cy2}`, fill:'#1e3a5f' }));
+  cg.appendChild(mk('polygon', { points:`${cx},${cy2+cr*0.8} ${cx-cr*0.22},${cy2} ${cx+cr*0.22},${cy2}`, fill:'#cbd5e1' }));
+  const cN = mk('text', { x:cx, y:cy2-cr*0.84, 'text-anchor':'middle', fill:'#1e3a5f', 'font-size':cr*0.44, 'font-weight':'700' });
   cN.textContent = 'U';
   cg.appendChild(cN);
   svg.appendChild(cg);
