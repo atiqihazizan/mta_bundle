@@ -71,7 +71,7 @@
     }
 
     .legend-item { display: flex; align-items: center; gap: 6px; }
-    .leg-line  { width: 26px; height: 3.5px; background: #2563eb; border-radius: 2px; }
+    .leg-line  { width: 26px; height: 3.5px; background: #e03030; border-radius: 2px; }
     .leg-start { width: 12px; height: 12px; background: #16a34a; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1.5px #16a34a; }
     .leg-end   { width: 12px; height: 12px; background: #dc2626; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1.5px #dc2626; }
 
@@ -270,8 +270,8 @@ function buildMap(zoom, lyrs) {
     return { x: lngPx(lng) - origPx, y: latPx(lat) - origPy };
   }
 
-  // Stroke size proportional to SVG so visible at all zoom levels
-  const sw = Math.max(10, svgW / 95);
+  // Stroke size — cukup jelas tapi tidak tutup teks jalan pada tiles
+  const sw = Math.max(6, svgW / 160);
 
   // Clear and rebuild SVG
   const svg = document.getElementById('map-svg');
@@ -298,13 +298,14 @@ function buildMap(zoom, lyrs) {
 
   svg.appendChild(mk('polyline', {
     points: pts, fill: 'none',
-    stroke: 'rgba(0,0,0,0.3)', 'stroke-width': sw + 4,
+    stroke: 'rgba(255,255,255,0.7)', 'stroke-width': sw + 3,
     'stroke-linecap': 'round', 'stroke-linejoin': 'round'
   }));
   svg.appendChild(mk('polyline', {
     points: pts, fill: 'none',
-    stroke: '#2563eb', 'stroke-width': sw,
-    'stroke-linecap': 'round', 'stroke-linejoin': 'round'
+    stroke: '#e03030', 'stroke-width': sw,
+    'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+    'stroke-opacity': '0.88'
   }));
 
   // Direction arrows
@@ -432,7 +433,8 @@ document.getElementById('coord-range').textContent =
   `${minLat.toFixed(4)}°U–${maxLat.toFixed(4)}°U, ${minLng.toFixed(4)}°T–${maxLng.toFixed(4)}°T`;
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-buildMap(16, 'm');
+buildMap(17, 'm');
+document.getElementById('zoom-label').textContent = 'Z17';
 </script>
 </body>
 </html>
