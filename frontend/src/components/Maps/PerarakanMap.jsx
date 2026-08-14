@@ -72,6 +72,17 @@ const calculateDistance = (coords) => {
   return total;
 };
 
+const ZOOM_KEY = 'perarakan_map_zoom';
+
+function ZoomTracker() {
+  useMapEvents({
+    zoomend(e) {
+      localStorage.setItem(ZOOM_KEY, e.target.getZoom());
+    },
+  });
+  return null;
+}
+
 function DrawEvents({ drawMode, isEditing, onAddWaypoint }) {
   useMapEvents({
     click(e) {
@@ -170,8 +181,9 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
 
   return (
     <>
-      <MapContainer center={CENTER} zoom={15} style={mapContainerStyle}>
+      <MapContainer center={CENTER} zoom={Number(localStorage.getItem(ZOOM_KEY)) || 15} style={mapContainerStyle}>
         <TileLayer url={TILE_URL} attribution="&copy; Google Maps" />
+        <ZoomTracker />
         <DrawEvents drawMode={drawMode} isEditing={isEditing} onAddWaypoint={handleAddWaypoint} />
 
         {routes.map((route, index) => {
