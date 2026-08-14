@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -13,6 +13,20 @@ L.Icon.Default.mergeOptions({
 });
 
 const COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
+
+const startIcon = L.divIcon({
+  className: '',
+  html: `<div style="background:#16a34a;color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.4)">A</div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
+
+const endIcon = L.divIcon({
+  className: '',
+  html: `<div style="background:#dc2626;color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.4)">B</div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
 
 const CENTER = [5.388783338110887, 100.46425691764681];
 const TILE_URL =
@@ -73,48 +87,92 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
     }
   }, [waypoints, onRouteComplete]);
 
+  const activeIndex = routes.findIndex((r) => r.id === activeRoute?.id);
+  const activeColor = activeIndex >= 0 ? COLORS[activeIndex % COLORS.length] : COLORS[0];
+
   return (
-    <MapContainer center={CENTER} zoom={15} style={mapContainerStyle}>
-      <TileLayer url={TILE_URL} attribution="&copy; Google Maps" />
-      <DrawEvents drawMode={drawMode} onAddWaypoint={handleAddWaypoint} />
+    <>
+      <MapContainer center={CENTER} zoom={15} style={mapContainerStyle}>
+        <TileLayer url={TILE_URL} attribution="&copy; Google Maps" />
+        <DrawEvents drawMode={drawMode} onAddWaypoint={handleAddWaypoint} />
 
-      {routes.map((route, index) => (
-        <Polyline
-          key={route.id}
-          positions={route.coords}
-          pathOptions={{
-            color: COLORS[index % COLORS.length],
-            weight: 4,
-            opacity: activeRoute?.id === route.id ? 1 : 0.6,
-          }}
-        >
-          <Popup>
-            <div className="p-1">
-              <h3 className="font-semibold">{route.name}</h3>
-              <p className="text-gray-600 text-sm mt-1">Jarak: {route.distance_km ?? '0.00'} km</p>
-            </div>
-          </Popup>
-        </Polyline>
-      ))}
+        {routes.map((route, index) => (
+          <Fragment key={route.id}>
+            <Polyline
+              positions={route.coords}
+              pathOptions={{
+                color: COLORS[index % COLORS.length],
+                weight: 4,
+                opacity: activeRoute?.id === route.id ? 1 : 0.6,
+              }}
+            >
+              <Popup>
+                <div className="p-1">
+                  <h3 className="font-semibold">{route.name}</h3>
+                  <p className="text-gray-600 text-sm mt-1">Jarak: {route.distance_km ?? '0.00'} km</p>
+                </div>
+              </Popup>
+            </Polyline>
 
-      {drawMode && waypoints.length > 0 && (
-        <Polyline
-          positions={waypoints}
-          pathOptions={{ color: '#2563eb', weight: 4, dashArray: '6 4' }}
-        />
-      )}
+            {route.coords?.length >= 2 && (
+              <>
+                <Marker position={route.coords[0]} icon={startIcon}>
+                  <Popup>
+                    <span>Mula: {route.name}</span>
+                  </Popup>
+                </Marker>
+                <Marker position={route.coords[route.coords.length - 1]} icon={endIcon}>
+                  <Popup>
+                    <span>
+                      Akhir: {route.name}
+                      <br />
+                      Jarak: {route.distance_km ?? '0.00'} km
+                    </span>
+                  </Popup>
+                </Marker>
+              </>
+            )}
+          </Fragment>
+        ))}
 
-      {drawMode &&
-        waypoints.map((wp, i) => (
-          <Marker key={`${wp[0]}-${wp[1]}-${i}`} position={wp}>
+        {drawMode && waypoints.length > 0 && (
+          <Polyline
+            positions={waypoints}
+            pathOptions={{ color: '#2563eb', weight: 4, dashArray: '6 4' }}
+          />
+        )}
+
+        {drawMode && waypoints.length > 0 && (
+          <Marker position={waypoints[0]} icon={startIcon}>
             <Popup>
-              <span>
-                Titik {i + 1}: {wp[0].toFixed(6)}, {wp[1].toFixed(6)}
-              </span>
+              <span>Mula</span>
             </Popup>
           </Marker>
-        ))}
-    </MapContainer>
+        )}
+
+        {drawMode && waypoints.length > 1 && (
+          <Marker position={waypoints[waypoints.length - 1]} icon={endIcon}>
+            <Popup>
+              <span>Akhir</span>
+            </Popup>
+          </Marker>
+        )}
+      </MapContainer>
+
+      {activeRoute && !drawMode && (
+        <div className="absolute bottom-4 right-4 z-[1000] min-w-[200px] rounded-lg bg-white p-3 text-sm shadow-xl">
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-block h-3 w-3 rounded-full"
+              style={{ backgroundColor: activeColor }}
+            />
+            <span className="font-semibold text-gray-900">{activeRoute.name}</span>
+          </div>
+          <div className="mt-1 text-gray-600">Jarak: {activeRoute.distance_km ?? '0.00'} km</div>
+          <div className="text-gray-600">Waypoint: {activeRoute.coords?.length ?? 0} titik</div>
+        </div>
+      )}
+    </>
   );
 }
 
