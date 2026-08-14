@@ -8,12 +8,13 @@ import {
   Switch,
   Typography,
 } from "@material-tailwind/react";
-import { PencilIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, PlusIcon, PrinterIcon, TrashIcon } from "@heroicons/react/24/outline";
 import PageComponent from "../components/PageComponent";
 import Modal from "../components/Modal";
 import PerarakanMap from "../components/Maps/PerarakanMap";
 import { useStateContext } from "../contexts/ContextProvider";
 import axiosClient from "../axios";
+import { printRoute } from "../utils/printPerarakan";
 
 export default function Perarakan() {
   const { showToast } = useStateContext();
@@ -185,6 +186,15 @@ export default function Perarakan() {
                         color="green"
                         onChange={() => toggleVisible(route)}
                       />
+                      <IconButton
+                        variant="text"
+                        size="sm"
+                        color="blue-gray"
+                        title="Cetak Route"
+                        onClick={() => printRoute(route)}
+                      >
+                        <PrinterIcon className="h-4 w-4" />
+                      </IconButton>
                       <IconButton
                         variant="text"
                         size="sm"

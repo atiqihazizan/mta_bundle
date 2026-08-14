@@ -1,0 +1,458 @@
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+export function printRoute(route) {
+  if (!route || !Array.isArray(route.coords) || route.coords.length < 2) return;
+
+  const name = route.name || "Route Perarakan";
+  const coordsJson = JSON.stringify(route.coords);
+  const metaJson = JSON.stringify({
+    id: route.id,
+    name: name,
+    visible: !!route.visible,
+    distance_km: route.distance_km != null ? route.distance_km : null,
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cetak Route — ${escapeHtml(name)}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f1f5f9;
+      display: flex;
+      justify-content: center;
+      padding: 30px 20px;
+      min-height: 100vh;
+    }
+
+    .page {
+      background: #fff;
+      width: 210mm;
+      min-height: 297mm;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+      padding: 12mm 12mm;
+      display: flex;
+      flex-direction: column;
+      gap: 6mm;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #1e3a5f;
+      padding-bottom: 5mm;
+    }
+
+    .page-header h1 { font-size: 20px; font-weight: 700; color: #1e3a5f; }
+    .page-header p  { font-size: 10.5px; color: #64748b; margin-top: 2px; }
+
+    .badge {
+      background: #1e3a5f; color: #fff;
+      font-size: 11px; font-weight: 700;
+      padding: 5px 12px; border-radius: 4px;
+    }
+
+    .map-wrap {
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      overflow: hidden;
+      flex: 1;
+      min-height: 200mm;
+      position: relative;
+      background: #e8edf2;
+    }
+
+    .map-wrap svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0; left: 0;
+    }
+
+    .legend {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      font-size: 11px;
+      color: #475569;
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .leg-line  { width: 26px; height: 3.5px; background: #e03030; border-radius: 2px; }
+    .leg-start { width: 12px; height: 12px; background: #16a34a; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1.5px #16a34a; }
+    .leg-end   { width: 12px; height: 12px; background: #dc2626; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1.5px #dc2626; }
+
+    .info-section { border: 1px solid #e2e8f0; border-radius: 5px; overflow: hidden; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    thead tr { background: #1e3a5f; color: #fff; }
+    thead th { padding: 5px 12px; text-align: left; font-weight: 600; }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody td { padding: 4px 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; }
+    tbody td:first-child { color: #64748b; font-weight: 500; width: 38%; }
+    .green { color: #16a34a !important; font-weight: 700; }
+
+    .page-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9.5px;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 3mm;
+    }
+
+    /* View toggle */
+    .view-toggle {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .view-toggle span {
+      font-size: 10.5px;
+      color: #64748b;
+      margin-right: 4px;
+    }
+
+    .vbtn {
+      padding: 5px 14px;
+      border-radius: 5px;
+      border: 1.5px solid #cbd5e1;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .vbtn:hover { border-color: #1e3a5f; color: #1e3a5f; }
+
+    .vbtn.active {
+      background: #1e3a5f;
+      border-color: #1e3a5f;
+      color: #fff;
+    }
+
+    .vbtn svg { flex-shrink: 0; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .page { box-shadow: none; width: 100%; padding: 8mm 10mm; }
+      .view-toggle { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-header">
+    <div>
+      <h1>&#9654; Route: ${escapeHtml(name)}</h1>
+      <p>Pelan laluan perarakan &bull; Dicetak pada <span id="print-date"></span></p>
+    </div>
+    <div class="badge">ID #${route.id}</div>
+  </div>
+
+  <div class="view-toggle">
+    <span>Paparan:</span>
+    <button class="vbtn active" id="btn-road" onclick="setView('m', this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 17l4-10 5 7 3-4 6 7"/></svg>
+      Peta Jalan
+    </button>
+    <button class="vbtn" id="btn-sat" onclick="setView('y', this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+      Satelit
+    </button>
+    <div style="width:1px;background:#e2e8f0;height:22px;margin:0 4px"></div>
+    <span>Zum:</span>
+    <button class="vbtn" id="btn-zout" onclick="changeZoom(-1)" title="Zum Keluar">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+    </button>
+    <span id="zoom-label" style="font-size:11px;color:#1e3a5f;font-weight:700;min-width:24px;text-align:center">Z16</span>
+    <button class="vbtn" id="btn-zin" onclick="changeZoom(1)" title="Zum Masuk">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+    </button>
+  </div>
+
+  <div class="map-wrap">
+    <svg id="map-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"></svg>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="leg-line"></div> Laluan Route</div>
+    <div class="legend-item"><div class="leg-start"></div> Titik Mula (A)</div>
+    <div class="legend-item"><div class="leg-end"></div> Titik Tamat (B)</div>
+  </div>
+
+  <div class="info-section">
+    <table>
+      <thead><tr><th colspan="2">Maklumat Route</th></tr></thead>
+      <tbody id="info-body"></tbody>
+    </table>
+  </div>
+
+  <div class="page-footer">
+    <span>Sistem Pengurusan Perarakan &bull; &copy; Peta: Google Maps &bull; Paparan: <span id="view-label">Peta Jalan</span></span>
+    <span id="coord-range"></span>
+  </div>
+
+</div>
+
+<script>
+const coords = ${coordsJson};
+
+const routeMeta = ${metaJson};
+
+const NS  = 'http://www.w3.org/2000/svg';
+const TS  = 256;
+const PAD = 1;
+const MIN_ZOOM = 14, MAX_ZOOM = 20;
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+let currentZoom = 16;
+let currentLyrs = 'm';
+
+const lats = coords.map(c => c[0]), lngs = coords.map(c => c[1]);
+const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+
+function haversine(a, b) {
+  const R = 6371, dLat=(b[0]-a[0])*Math.PI/180, dLon=(b[1]-a[1])*Math.PI/180;
+  const s = Math.sin(dLat/2)**2 + Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
+}
+
+function mk(tag, attrs) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttributeNS(null, k, v);
+  return e;
+}
+
+// ── Core build function ───────────────────────────────────────────────────────
+function buildMap(zoom, lyrs) {
+  currentZoom = zoom;
+  currentLyrs = lyrs;
+
+  const N2 = 1 << zoom;
+
+  function lngFrac(lng) { return (lng + 180) / 360 * N2; }
+  function latFrac(lat) {
+    const r = lat * Math.PI / 180;
+    return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * N2;
+  }
+  function lngPx(lng) { return lngFrac(lng) * TS; }
+  function latPx(lat) { return latFrac(lat) * TS; }
+
+  const txMin = Math.floor(lngFrac(minLng)) - PAD;
+  const txMax = Math.floor(lngFrac(maxLng)) + PAD;
+  const tyMin = Math.floor(latFrac(maxLat)) - PAD;
+  const tyMax = Math.floor(latFrac(minLat)) + PAD;
+
+  const svgW = (txMax - txMin + 1) * TS;
+  const svgH = (tyMax - tyMin + 1) * TS;
+  const origPx = txMin * TS, origPy = tyMin * TS;
+
+  function toSvg(lat, lng) {
+    return { x: lngPx(lng) - origPx, y: latPx(lat) - origPy };
+  }
+
+  // Stroke size — cukup jelas tapi tidak tutup teks jalan pada tiles
+  const sw = Math.max(6, svgW / 160);
+
+  // Clear and rebuild SVG
+  const svg = document.getElementById('map-svg');
+  svg.innerHTML = '';
+  svg.setAttribute('viewBox', \`0 0 \${svgW} \${svgH}\`);
+
+  // ── Tiles ──────────────────────────────────────────────────────────────────
+  for (let ty = tyMin; ty <= tyMax; ty++) {
+    for (let tx = txMin; tx <= txMax; tx++) {
+      const s = (tx + ty) % 4;
+      const img = mk('image', {
+        x: (tx - txMin) * TS, y: (ty - tyMin) * TS,
+        width: TS, height: TS,
+        href: \`https://mt\${s}.google.com/vt/lyrs=\${lyrs}&x=\${tx}&y=\${ty}&z=\${zoom}\`,
+        'data-tx': tx, 'data-ty': ty, 'data-s': s
+      });
+      img.classList.add('map-tile');
+      svg.appendChild(img);
+    }
+  }
+
+  // ── Route ──────────────────────────────────────────────────────────────────
+  const pts = coords.map(c => { const p = toSvg(c[0],c[1]); return \`\${p.x},\${p.y}\`; }).join(' ');
+
+  svg.appendChild(mk('polyline', {
+    points: pts, fill: 'none',
+    stroke: 'rgba(255,255,255,0.7)', 'stroke-width': sw + 3,
+    'stroke-linecap': 'round', 'stroke-linejoin': 'round'
+  }));
+  svg.appendChild(mk('polyline', {
+    points: pts, fill: 'none',
+    stroke: '#e03030', 'stroke-width': sw,
+    'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+    'stroke-opacity': '0.88'
+  }));
+
+  // Direction arrows
+  const arrSz = sw * 1.2;
+  for (let i = 4; i < coords.length - 1; i += 9) {
+    const a = toSvg(coords[i][0], coords[i][1]);
+    const b = toSvg(coords[i+1][0], coords[i+1][1]);
+    const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    svg.appendChild(mk('polygon', {
+      points: \`0,\${-arrSz} \${arrSz*1.4},0 0,\${arrSz}\`,
+      fill: '#fff', opacity: '0.88',
+      transform: \`translate(\${mx},\${my}) rotate(\${ang})\`
+    }));
+  }
+
+  // ── Markers ────────────────────────────────────────────────────────────────
+  function pinMarker(lat, lng, color, letter, label) {
+    const p = toSvg(lat, lng);
+    const sz = sw * 2.2;
+    const g  = document.createElementNS(NS, 'g');
+    g.appendChild(mk('path', {
+      d: 'M0,-1 C-0.45,-1 -0.45,-0.36 0,0 C0.45,-0.36 0.45,-1 0,-1Z',
+      fill: color, stroke: '#fff', 'stroke-width': 0.08,
+      transform: \`translate(\${p.x},\${p.y}) scale(\${sz})\`
+    }));
+    g.appendChild(mk('circle', { cx: p.x, cy: p.y - sz*0.73, r: sz*0.27, fill: '#fff' }));
+    const lt = mk('text', {
+      x: p.x, y: p.y - sz*0.58,
+      'text-anchor': 'middle', fill: color,
+      'font-size': sz * 0.35, 'font-weight': 'bold'
+    });
+    lt.textContent = letter;
+    g.appendChild(lt);
+
+    // Label pill
+    const lx = p.x + sz * 0.7;
+    const lbg = mk('rect', { x: lx, y: p.y - sz - 2, width: sz * 2.8, height: sz * 0.72, rx: sz*0.14, fill: color, opacity: '0.93' });
+    const ltxt = mk('text', {
+      x: lx + sz * 1.4, y: p.y - sz + sz*0.5 - 2,
+      'text-anchor': 'middle', fill: '#fff',
+      'font-size': sz * 0.44, 'font-weight': '700'
+    });
+    ltxt.textContent = label;
+    g.append(lbg, ltxt);
+    svg.appendChild(g);
+  }
+
+  pinMarker(coords[0][0], coords[0][1], '#16a34a', 'A', 'MULA');
+  pinMarker(coords[coords.length-1][0], coords[coords.length-1][1], '#dc2626', 'B', 'TAMAT');
+
+  // ── Scale bar ──────────────────────────────────────────────────────────────
+  const cosLat = Math.cos(((minLat+maxLat)/2) * Math.PI/180);
+  const mPerPx = (40075016.686 * cosLat) / (N2 * TS);
+  const barM   = zoom >= 18 ? 50 : zoom >= 16 ? 200 : zoom === 15 ? 500 : 1000;
+  const barPx  = barM / mPerPx;
+  const bx = 20, by = svgH - 20;
+  const fs = sw * 1.1;
+
+  const sg = document.createElementNS(NS, 'g');
+  sg.appendChild(mk('rect', { x: bx-6, y: by-fs*1.8, width: barPx+fs*4, height: fs*2.4, rx: 4, fill: 'rgba(255,255,255,0.85)' }));
+  sg.appendChild(mk('line', { x1:bx, y1:by, x2:bx+barPx, y2:by, stroke:'#1e293b', 'stroke-width': sw*0.22, 'stroke-linecap':'square' }));
+  sg.appendChild(mk('line', { x1:bx, y1:by-sw*0.4, x2:bx, y2:by+sw*0.4, stroke:'#1e293b', 'stroke-width':sw*0.16 }));
+  sg.appendChild(mk('line', { x1:bx+barPx, y1:by-sw*0.4, x2:bx+barPx, y2:by+sw*0.4, stroke:'#1e293b', 'stroke-width':sw*0.16 }));
+  const st = mk('text', { x:bx+barPx/2, y:by-fs*0.4, 'text-anchor':'middle', fill:'#1e293b', 'font-size':fs, 'font-weight':'600' });
+  st.textContent = barM >= 1000 ? (barM/1000)+' km' : barM+' m';
+  sg.appendChild(st);
+  svg.appendChild(sg);
+
+  // ── Compass ────────────────────────────────────────────────────────────────
+  const cr = sw * 2, cx = svgW - cr - 10, cy2 = svgH - cr - 10;
+  const cg = document.createElementNS(NS, 'g');
+  cg.appendChild(mk('circle', { cx, cy: cy2, r: cr, fill:'rgba(255,255,255,0.9)', stroke:'#94a3b8', 'stroke-width': sw*0.08 }));
+  cg.appendChild(mk('polygon', { points:\`\${cx},\${cy2-cr*0.82} \${cx-cr*0.22},\${cy2} \${cx+cr*0.22},\${cy2}\`, fill:'#1e3a5f' }));
+  cg.appendChild(mk('polygon', { points:\`\${cx},\${cy2+cr*0.82} \${cx-cr*0.22},\${cy2} \${cx+cr*0.22},\${cy2}\`, fill:'#cbd5e1' }));
+  const cN = mk('text', { x:cx, y:cy2-cr*0.88, 'text-anchor':'middle', fill:'#1e3a5f', 'font-size':cr*0.46, 'font-weight':'700' });
+  cN.textContent = 'U';
+  cg.appendChild(cN);
+  svg.appendChild(cg);
+}
+
+// ── Toggle view ───────────────────────────────────────────────────────────────
+function setView(lyrs, btn) {
+  if (lyrs === currentLyrs) return;
+  currentLyrs = lyrs;
+  document.querySelectorAll('.map-tile').forEach(img => {
+    const tx = img.getAttribute('data-tx'), ty = img.getAttribute('data-ty'), s = img.getAttribute('data-s');
+    img.setAttribute('href', \`https://mt\${s}.google.com/vt/lyrs=\${lyrs}&x=\${tx}&y=\${ty}&z=\${currentZoom}\`);
+  });
+  document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('view-label').textContent = lyrs === 'm' ? 'Peta Jalan' : 'Satelit';
+}
+
+// ── Zoom control ──────────────────────────────────────────────────────────────
+function changeZoom(delta) {
+  const z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, currentZoom + delta));
+  if (z === currentZoom) return;
+  buildMap(z, currentLyrs);
+  document.getElementById('zoom-label').textContent = 'Z' + z;
+  document.getElementById('btn-zin').disabled  = z >= MAX_ZOOM;
+  document.getElementById('btn-zout').disabled = z <= MIN_ZOOM;
+}
+
+// ── Info table (once) ─────────────────────────────────────────────────────────
+const dist    = coords.reduce((d,c,i) => i===0 ? 0 : d + haversine(coords[i-1],c), 0);
+const distStr = routeMeta.distance_km ? routeMeta.distance_km + ' km' : (dist >= 1 ? dist.toFixed(2)+' km' : (dist*1000).toFixed(0)+' m');
+const endC    = coords[coords.length-1];
+const nameHtml = escapeHtml(routeMeta.name);
+const statusHtml = routeMeta.visible ? '<span class="green">Aktif</span>' : '<span style="color:#dc2626">Tidak Aktif</span>';
+
+[['ID Route','#'+routeMeta.id],['Nama Route',nameHtml],
+ ['Jumlah Koordinat', coords.length+' titik'],
+ ['Jarak Anggaran', distStr],
+ ['Koordinat Mula', coords[0][0].toFixed(6)+', '+coords[0][1].toFixed(6)],
+ ['Koordinat Tamat', endC[0].toFixed(6)+', '+endC[1].toFixed(6)],
+ ['Status', statusHtml]
+].forEach(([l, v]) => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = '<td>'+l+'</td><td>'+v+'</td>';
+  document.getElementById('info-body').appendChild(tr);
+});
+
+document.getElementById('print-date').textContent =
+  new Date().toLocaleDateString('ms-MY', { day:'2-digit', month:'long', year:'numeric' });
+document.getElementById('coord-range').textContent =
+  minLat.toFixed(4)+'°U–'+maxLat.toFixed(4)+'°U, '+minLng.toFixed(4)+'°T–'+maxLng.toFixed(4)+'°T';
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildMap(17, 'm');
+document.getElementById('zoom-label').textContent = 'Z17';
+</script>
+</body>
+</html>`;
+
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+}
