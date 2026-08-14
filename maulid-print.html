@@ -49,12 +49,16 @@
       border-radius: 5px;
       overflow: hidden;
       background: #e8edf2;
+      cursor: grab;
+      user-select: none;
     }
+    .map-wrap.dragging { cursor: grabbing; }
 
     .map-wrap svg {
       display: block;
       width: 100%;
       height: auto;
+      pointer-events: none;
     }
 
     .legend {
@@ -160,7 +164,7 @@
     <button class="vbtn" id="btn-zout" onclick="changeZoom(-1)" title="Zum Keluar">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
     </button>
-    <span id="zoom-label" style="font-size:11px;color:#1e3a5f;font-weight:700;min-width:24px;text-align:center">Z16</span>
+    <span id="zoom-label" style="font-size:11px;color:#1e3a5f;font-weight:700;min-width:36px;text-align:center">Z17.0</span>
     <button class="vbtn" id="btn-zin" onclick="changeZoom(1)" title="Zum Masuk">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
     </button>
@@ -222,8 +226,10 @@ const VH      = TH * TS;  // 1536
 const SW      = 12;  // stroke width dalam viewBox units — TIDAK berubah
 const MIN_ZOOM = 14, MAX_ZOOM = 20;
 
-let currentZoom = 17;
+let currentZoom = 17;   // integer tile zoom (used by setView for URLs)
 let currentLyrs = 'm';
+let fracZoom    = 17.0; // float display zoom
+let vb = { x: 0, y: 0, w: VW, h: VH }; // current SVG viewBox
 
 const lats = coords.map(c => c[0]), lngs = coords.map(c => c[1]);
 const minLat = Math.min(...lats), maxLat = Math.max(...lats);
@@ -399,14 +405,43 @@ function setView(lyrs, btn) {
   document.getElementById('view-label').textContent = lyrs === 'm' ? 'Peta Jalan' : 'Satelit';
 }
 
+// ── ViewBox helpers ───────────────────────────────────────────────────────────
+function applyViewBox() {
+  const svg = document.getElementById('map-svg');
+  svg.setAttribute('viewBox', `${vb.x.toFixed(1)} ${vb.y.toFixed(1)} ${vb.w.toFixed(1)} ${vb.h.toFixed(1)}`);
+  document.getElementById('zoom-label').textContent = 'Z' + fracZoom.toFixed(1);
+  document.getElementById('btn-zin').disabled  = fracZoom >= MAX_ZOOM;
+  document.getElementById('btn-zout').disabled = fracZoom <= MIN_ZOOM;
+}
+
+// focusSvgX/Y: SVG-space point to zoom toward (default centre)
+function setFracZoom(newFrac, focusSvgX = VW / 2, focusSvgY = VH / 2) {
+  newFrac = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newFrac));
+  const factor = 2 ** (fracZoom - newFrac); // <1 = zoom in, >1 = zoom out
+  const fx = (focusSvgX - vb.x) / vb.w;
+  const fy = (focusSvgY - vb.y) / vb.h;
+  vb.w = Math.max(80, Math.min(VW * 8, vb.w * factor));
+  vb.h = VH * (vb.w / VW);
+  vb.x = focusSvgX - fx * vb.w;
+  vb.y = focusSvgY - fy * vb.h;
+  fracZoom = newFrac;
+
+  // Rebuild tiles when integer zoom changes
+  const newTileZoom = Math.round(fracZoom);
+  if (newTileZoom !== currentZoom && newTileZoom >= MIN_ZOOM && newTileZoom <= MAX_ZOOM) {
+    buildMap(newTileZoom, currentLyrs);
+    // Reset viewBox centred on route, scaled to current fracZoom
+    const scale = 2 ** (fracZoom - newTileZoom);
+    vb.w = VW / scale; vb.h = VH / scale;
+    vb.x = (VW - vb.w) / 2; vb.y = (VH - vb.h) / 2;
+  }
+
+  applyViewBox();
+}
+
 // ── Zoom control ──────────────────────────────────────────────────────────────
 function changeZoom(delta) {
-  const z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, currentZoom + delta));
-  if (z === currentZoom) return;
-  buildMap(z, currentLyrs);
-  document.getElementById('zoom-label').textContent = 'Z' + z;
-  document.getElementById('btn-zin').disabled  = z >= MAX_ZOOM;
-  document.getElementById('btn-zout').disabled = z <= MIN_ZOOM;
+  setFracZoom(fracZoom + delta * 0.5);
 }
 
 // ── Info table (once) ─────────────────────────────────────────────────────────
@@ -433,7 +468,43 @@ document.getElementById('coord-range').textContent =
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 buildMap(17, 'm');
-document.getElementById('zoom-label').textContent = 'Z17';
+applyViewBox();
+
+// ── Mouse wheel zoom ──────────────────────────────────────────────────────────
+const mapWrap = document.querySelector('.map-wrap');
+const mapSvg  = document.getElementById('map-svg');
+
+mapWrap.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const rect  = mapSvg.getBoundingClientRect();
+  const svgMX = (e.clientX - rect.left)  / rect.width  * vb.w + vb.x;
+  const svgMY = (e.clientY - rect.top)   / rect.height * vb.h + vb.y;
+  // Normalize: each scroll tick ≈ 0.25 zoom step, max 0.4 per event
+  const raw  = e.deltaMode === 1 ? e.deltaY * 30 : e.deltaY;
+  const step = -Math.sign(raw) * Math.min(0.4, Math.abs(raw) / 200);
+  setFracZoom(fracZoom + step, svgMX, svgMY);
+}, { passive: false });
+
+// ── Mouse drag pan ────────────────────────────────────────────────────────────
+let drag = null;
+mapWrap.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  drag = { cx: e.clientX, cy: e.clientY, vbx: vb.x, vby: vb.y };
+  mapWrap.classList.add('dragging');
+});
+document.addEventListener('mousemove', (e) => {
+  if (!drag) return;
+  const rect = mapSvg.getBoundingClientRect();
+  const pps  = rect.width / vb.w; // pixels per SVG unit
+  vb.x = drag.vbx - (e.clientX - drag.cx) / pps;
+  vb.y = drag.vby - (e.clientY - drag.cy) / pps;
+  applyViewBox();
+});
+document.addEventListener('mouseup', () => {
+  drag = null;
+  mapWrap.classList.remove('dragging');
+});
 </script>
 </body>
 </html>
