@@ -69,8 +69,8 @@ export default function Perarakan() {
     setEditingRoute(route);
     setActiveRoute(route);
     setNewRouteName(route.name);
-    setPendingCoords([]);
-    setPendingDistance(0);
+    setPendingCoords(route.coords ?? []);
+    setPendingDistance(route.distance ?? 0);
     setDrawMode(true);
   };
 
@@ -226,6 +226,7 @@ export default function Perarakan() {
             drawMode={drawMode}
             activeRoute={activeRoute}
             onRouteComplete={handleRouteComplete}
+            initialWaypoints={editingRoute?.coords ?? []}
           />
 
           {drawMode && (

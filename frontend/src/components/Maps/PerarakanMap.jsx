@@ -70,7 +70,7 @@ DrawEvents.propTypes = {
   onAddWaypoint: PropTypes.func.isRequired,
 };
 
-export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete }) {
+export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete, initialWaypoints = [] }) {
   const [waypoints, setWaypoints] = useState([]);
 
   const handleAddWaypoint = useCallback((point) => {
@@ -78,8 +78,12 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
   }, []);
 
   useEffect(() => {
-    if (!drawMode) setWaypoints([]);
-  }, [drawMode]);
+    if (drawMode) {
+      setWaypoints(initialWaypoints.length > 0 ? initialWaypoints : []);
+    } else {
+      setWaypoints([]);
+    }
+  }, [drawMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (onRouteComplete && waypoints.length > 0) {
@@ -182,4 +186,5 @@ PerarakanMap.propTypes = {
   drawMode: PropTypes.bool,
   activeRoute: PropTypes.object,
   onRouteComplete: PropTypes.func,
+  initialWaypoints: PropTypes.array,
 };
