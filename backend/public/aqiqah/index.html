@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borang Penyertaan Ibadah Korban dan Akikah MTA</title>
+    <style>
+        /* Gaya untuk saiz A4 */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .page {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            background: white;
+            padding: 20mm 30mm;
+            box-sizing: border-box;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        @media print {
+            body {
+                background: none;
+            }
+            .page {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 15mm 25mm;
+                box-shadow: none;
+            }
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-width: 250px;
+            margin-bottom: 5px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 20px 0;
+            text-transform: uppercase;
+            margin-bottom: 50px;
+        }
+        .form-group {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: baseline;
+        }
+        label {
+            display: inline-block;
+            margin-bottom: 0;
+            font-weight: normal;
+            min-width: 50px;
+        }
+        input[type="text"],
+        input[type="tel"],
+        input[type="number"],
+        input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .participants {
+            margin-top: 20px;
+        }
+        .participant-entry {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 15px;
+        }
+        
+        .participant-line {
+            margin-left: 10px;
+            flex-grow: 1;
+            border-bottom: 2px dotted #000;
+            position: relative;
+            top: 0px;
+        }
+        
+        .form-value {
+            margin-left: 10px;
+            flex-grow: 1;
+            border-bottom: 2px dotted #000;
+            position: relative;
+            top: 0px;
+        }
+        
+        .agreement {
+            margin: 15px 0;
+            line-height: 1.5;
+        }
+        
+        .text-justify {
+            text-align: justify;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+        
+        .bold {
+            font-weight: bold;
+        }
+        .signature {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+        }
+        .signature-field {
+            text-align: center;
+            width: 45%;
+        }
+
+        .btn-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        @media print {
+            .btn-container {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <img src="assets/logo.png" alt="Masjid Tuan Abdullah" class="logo">
+            <!-- <h2 class="bold">MASJID TUAN ABDULLAH</h2> -->
+        </div>
+
+    <h3 class="bold text-center">BORANG PENYERTAAN IBADAH KORBAN DAN AKIKAH MTA <span id="year-heading"></span></h3>
+    <br/>
+
+    <div class="form-container">
+        <div class="form-group">
+            <label>Nama : </label>
+            <span class="form-value"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Alamat : </label>
+            <span class="form-value"></span>
+        </div>
+
+        <div class="form-group">
+            <label>No. h/p : </label>
+            <span class="form-value"></span>
+        </div>
+
+        <br/>
+        
+        <div class="agreement" style="margin-bottom: 0px;">
+            <p class="text-justify">Saya dengan ini <strong>BERSETUJU</strong> menyertai <strong>Program Ibadah Korban/Akikah MTA tahun <span id="year-text"></span></strong> dan akan membuat bayaran secara tunai berjumlah RM .................... pada tarikh ....../....../<span id="year-date"></span>, insyaAllah.</p>
+        </div>
+
+        <div class="form-group">
+            <p style="margin:0">Jumlah bahagian korban/akikah yang saya sertai adalah sebanyak ............ bahagian seperti senarai nama berikut;</p>
+        </div>
+
+        <div class="participants">
+            <div class="participant-entry">
+                <span>1.</span> <span class="participant-line"></span>
+            </div>
+            <div class="participant-entry">
+                <span>2.</span> <span class="participant-line"></span>
+            </div>
+            <div class="participant-entry">
+                <span>3.</span> <span class="participant-line"></span>
+            </div>
+            <div class="participant-entry">
+                <span>4.</span> <span class="participant-line"></span>
+            </div>
+            <div class="participant-entry">
+                <span>5.</span> <span class="participant-line"></span>
+            </div>
+            <div class="participant-entry">
+                <span>6.</span> <span class="participant-line"></span>
+            </div>
+            <div class="participant-entry">
+                <span>7.</span> <span class="participant-line"></span>
+            </div>
+        </div>
+
+        <div class="agreement">
+            <p class="text-justify">Saya dengan ini bersetuju untuk <strong>mewakilkan kepada pihak Jawatankuasa</strong> yang dilantik oleh MTA untuk menguruskan pembelian, penyembelihan dan pengagihan daging korban. Selain itu, saya juga bersetuju untuk <strong>menyumbangkan wang penyertaan program ke dalam Tabung Pengurusan Korban/Kenduri Anjuran MTA</strong> jika terdapat baki/lebihan daripada wang tersebut.</p>
+        </div>
+
+        <div class="signature">
+            <div class="signature-field">
+                <p>Tandatangan : ...................................</p>
+            </div>
+            <div class="signature-field">
+                <p>Tarikh : ...................................</p>
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button class="btn" onclick="window.print()">Cetak Borang A4</button>
+        </div>
+    </div>
+
+    <script>
+        // Tambah tarikh hari ini dan tahun semasa secara automatik
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const day = String(today.getDate()).padStart(2, '0');
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const year = today.getFullYear();
+            
+            // Set tahun semasa di title
+            document.title = `Borang Penyertaan Ibadah Korban dan Akikah MTA ${year}`;
+            
+            // Set tahun semasa di semua tempat dalam body
+            document.getElementById('year-heading').textContent = year;
+            document.getElementById('year-text').textContent = year;
+            document.getElementById('year-date').textContent = year;
+            
+            // Cari input dengan placeholder dd/mm/yyyy dan isi dengan tarikh hari ini
+            const dateInputs = document.querySelectorAll('input[placeholder="dd/mm/yyyy"]');
+            dateInputs.forEach(input => {
+                input.value = `${day}/${month}/${year}`;
+            });
+        });
+    </script>
+</body>
+</html>

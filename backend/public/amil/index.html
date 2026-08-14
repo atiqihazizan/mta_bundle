@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Borang Serahan Pugutan Fitrah</title>
+	<style>
+		.container {
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 20px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			position: relative;
+		}
+
+		.input-group {
+			margin-bottom: 20px;
+			display: flex;
+			gap: 10px;
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			z-index: 1000;
+		}
+
+		.pdf-pages {
+			display: flex;
+			flex-direction: column;
+			gap: 20px;
+		}
+
+		.pdf-container {
+			width: 21cm;
+			height: 29cm;
+			border: 1px solid #ccc;
+			position: relative;
+			background: white;
+		}
+
+		canvas {
+			width: 21cm !important;
+			height: 29cm !important;
+			image-rendering: -webkit-optimize-contrast;
+			image-rendering: crisp-edges;
+		}
+
+		button, a {
+			padding: 8px 16px;
+			background-color: #4CAF50;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+		}
+
+		a {
+			text-decoration: none;
+		}
+
+		button:hover, a:hover {
+			background-color: #45a049;
+		}
+
+		select {
+			padding: 5px;
+			border-radius: 4px;
+			border: 1px solid #ccc;
+			font-family: Arial, sans-serif;
+			font-size: 14px;
+		}
+
+		.name_amil {
+			position: absolute;
+			top: 210px;
+			left: 238px;
+			font-size: 12pt;
+			font-weight: bold;
+			border: 0;
+			background: transparent;
+			text-transform: uppercase;
+			width: 250px;
+		}
+
+		#overall {
+			position: absolute;
+			top: 959px;
+			left: 660px;
+			font-size: 12pt;
+			font-weight: bold;
+			border: 0;
+			background: transparent;
+			text-transform: uppercase;
+			width: 107px;
+			text-align: right;
+			font-family: arial;
+		}
+
+		.overall {
+			position: absolute;
+			top: 959px;
+			left: 660px;
+			font-size: 12pt;
+			font-weight: bold;
+			border: 0;
+			background: transparent;
+			text-transform: uppercase;
+			width: 107px;
+			text-align: right;
+			font-family: arial;
+		}
+
+		.marked {
+			position: absolute;
+			left: 743px;
+			height: 29px;
+			display: none;
+		}
+
+		/* Marked positions for different coupon types */
+		.marked-7 {
+			top: 219px;
+			display: block;
+		}
+
+		.marked-10 {
+			top: 236px;
+			display: block;
+		}
+
+		.marked-15 {
+			top: 255px;
+			display: block;
+		}
+
+		.marked-25 {
+			top: 272px;
+			display: block;
+		}
+
+		/* Table Styles */
+		table {
+			position: absolute;
+			top: 384px;
+			left: 64px;
+			border-collapse: collapse;
+			width: auto;
+			font-family: Arial, sans-serif;
+		}
+
+		td {
+			border: 0px solid #000;
+			height: 22px;
+			padding: 3px 0px 0 6px;
+			font-size: 10pt;
+		}
+
+		/* Different column widths */
+		td:nth-child(1) { width: 41px; text-align: center; }  /* No */
+		td:nth-child(2) { width: 79px; }  /* No Resit */
+		td:nth-child(3) { width: 70px; }  /* From */
+		td:nth-child(4) { width: 62px; }  /* To */
+		td:nth-child(5) { width: 74px; text-align: center; }  /* Total */
+		td:nth-child(6) { width: 72px; }  /* From1 */
+		td:nth-child(7) { width: 79px; }  /* To1 */
+		td:nth-child(8) { width: 70px; text-align: center; }  /* Total1 */
+		td:nth-child(9) { width: 102px; text-align: right; padding-right: 5px; }  /* Amount */
+
+		tr:nth-child(6) td { padding-top: 1px; }
+		tr:nth-child(10) td { padding-top: 2px; }
+
+		@media print {
+			@page {
+				size: A4;
+				margin: 0;
+				padding: 0;
+			}
+
+			.input-group {
+				display: none;
+			}
+
+			.container {
+				padding: 0;
+			}
+
+			.pdf-container {
+				border: none;
+				page-break-after: always;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container">
+		<div class="input-group">
+			<select id="amilName">
+				<option value="">Pilih Amil</option>
+			</select>
+			<button onclick="printPDF()">Print</button>
+			<a href="amil_list.php">Kemaskini</a>
+		</div>
+		<div id="pdf-pages" class="pdf-pages">
+			<!-- PDF containers will be added here dynamically -->
+		</div>
+	</div>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+	<script>
+		let amilData = [];
+		const pdfPages = document.getElementById('pdf-pages');
+
+		// Format currency to 2 decimal places without RM symbol
+		function formatCurrency(amount) {
+			return amount.toLocaleString('en-US', {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2
+			});
+		}
+
+		// Pad number with zeros
+		function padNumber(num, size = 6) {
+			num = num.toString();
+			while (num.length < size) num = "0" + num;
+			return num;
+		}
+
+		// Load amil JSON data
+		async function loadAmilData() {
+			try {
+				const response = await fetch('amil.json');
+				amilData = await response.json();
+				setupAmilDropdown();
+			} catch (error) {
+				console.error('Error loading amil data:', error);
+			}
+		}
+
+		// Setup amil dropdown
+		function setupAmilDropdown() {
+			const amilSelect = document.getElementById('amilName');
+			amilSelect.innerHTML = '<option value="">Pilih Amil</option>';
+
+			amilData.forEach((amil, index) => {
+				const option = document.createElement('option');
+				option.value = index;
+				option.textContent = amil.name;
+				amilSelect.appendChild(option);
+			});
+
+			amilSelect.addEventListener('change', processAmilData);
+		}
+
+		// Process amil data and create PDF pages
+		async function processAmilData() {
+			const amilSelect = document.getElementById('amilName');
+			pdfPages.innerHTML = ''; // Clear existing pages
+
+			if (amilSelect.value === '') return;
+
+			const selectedAmilIndex = parseInt(amilSelect.value);
+			const amil = amilData[selectedAmilIndex];
+
+			// Get all coupon types for this amil
+			const couponTypes = Object.keys(amil).filter(key => !isNaN(key));
+      
+			// Create a page for each coupon type
+			for (const couponType of couponTypes) {
+        const container = document.createElement('div');
+				container.className = 'pdf-container';
+				container.id = `pdf-container-${couponType}`;
+        
+        if(amil[couponType].length === 0) continue;
+
+				// Add name input
+				const nameInput = document.createElement('input');
+				nameInput.type = 'text';
+				nameInput.className = 'name_amil';
+				nameInput.value = amil.name;
+				nameInput.readOnly = true;
+
+				// Add marked image
+				const markedImg = document.createElement('img');
+				markedImg.src = 'marked.png';
+				markedImg.className = `marked marked-${couponType}`;
+
+				// Add overall amount label
+				const overallLabel = document.createElement('label');
+				overallLabel.id = `overall-${couponType}`;
+				overallLabel.className = 'overall';
+				overallLabel.textContent = '0.00';
+
+				// Create and populate table
+				const table = document.createElement('table');
+				let overall = 0;
+				const tableContent = Object.entries(amil[couponType]).map(([receiptNo, range], index) => {
+					const [start, end, qr] = range;
+					const isStartZero = start === 0;
+					const isEndZero = end === 0;
+					const isQrZero = qr === 0 || qr === null || qr === undefined;
+					
+					const data = {
+						from: isStartZero ? '' : padNumber(start),
+						to: isStartZero ? '' : (isEndZero ? padNumber(start * 1 + 49) : padNumber(end)),
+						total: isStartZero ? '' : (isEndZero ? 50 : (end - start + 1)),
+						from1: isStartZero ? padNumber(end) : (isEndZero ? '' : padNumber(end * 1 + 1)),
+						to1: isStartZero ? padNumber(end * 1 + 49) : (isEndZero ? '' : padNumber((end * 1 + 1) + (49 - (end - start + 1)))),
+						total1: isStartZero ? 50 : (isEndZero ? '' : (50 - (end - start + 1)))
+					};
+          // Kira jumlah berdasarkan senario QR code
+					let amount = 0;
+					if (qr === data.total) {
+						// Jika qr sama dengan total, jumlah adalah 0
+						amount = 0;
+					} else if (qr > 0 && qr < data.total) {
+						// Jika qr kurang dari total, jumlah adalah (total - qr) * nilai kupon
+						amount = (data.total - qr) * parseInt(couponType);
+					} else {
+						// Jika qr undefined/null/0, guna formula asal
+						amount = data.total ? data.total * parseInt(couponType) : 0;
+					}
+					overall += amount;
+
+					// Format paparan total dengan maklumat QR
+					let totalDisplay = data.total;
+					if (qr > 0 && qr !== null && qr !== undefined) {
+						if (qr === data.total) {
+							// Jika qr sama dengan total, papar hanya QR
+							totalDisplay = `QR ${qr}`;
+						} else {
+							// Jika qr kurang dari total, papar format biasa/QR
+							totalDisplay = `${data.total - qr}/QR ${qr}`;
+						}
+					}
+
+					return `<tr>
+						<td>${index + 1}</td>
+						<td>${padNumber(receiptNo)}</td>
+						<td>${data.from}</td>
+						<td>${data.to}</td>
+						<td>${totalDisplay}</td>
+						<td>${data.from1}</td>
+						<td>${data.to1}</td>
+						<td>${data.total1}</td>
+						<td>${amount > 0 ? formatCurrency(amount) : ''}</td>
+					</tr>`;
+				}).join('');
+
+				table.innerHTML = tableContent;
+				overallLabel.textContent = overall > 0 ? formatCurrency(overall) : '';
+
+				// Add canvas for PDF
+				const canvas = document.createElement('canvas');
+
+				container.appendChild(canvas);
+				container.appendChild(nameInput);
+				container.appendChild(markedImg);
+				container.appendChild(overallLabel);
+				container.appendChild(table);
+				pdfPages.appendChild(container);
+
+				// Load PDF into this container
+				await loadPDF(container.id, canvas);
+			}
+		}
+
+		// Load PDF into specific container
+		async function loadPDF(containerId, canvas) {
+			try {
+				const response = await fetch('default.pdf');
+				const pdfData = new Uint8Array(await response.arrayBuffer());
+
+				const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+				const pdf = await loadingTask.promise;
+
+				const page = await pdf.getPage(1);
+				const viewport = page.getViewport({ scale: 1.5 });
+
+				const context = canvas.getContext('2d');
+				canvas.height = viewport.height;
+				canvas.width = viewport.width;
+
+				await page.render({
+					canvasContext: context,
+					viewport: viewport
+				}).promise;
+			} catch (error) {
+				console.error('Error loading PDF:', error);
+			}
+		}
+
+		function printPDF() {
+			window.print();
+		}
+
+		// Initialize
+		pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+		window.addEventListener('DOMContentLoaded', loadAmilData);
+	</script>
+</body>
+
+</html>
