@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
+import '@geoman-io/leaflet-geoman-free';
 import L from 'leaflet';
 import PropTypes from 'prop-types';
 
@@ -131,26 +132,9 @@ GeomanEditLayer.propTypes = {
 
 export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete, initialWaypoints = [] }) {
   const [waypoints, setWaypoints] = useState([]);
-  const [pmReady, setPmReady] = useState(false);
 
   const isEditing = drawMode && initialWaypoints.length > 0;
   const isDrawingNew = drawMode && !isEditing;
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        if (!globalThis.L) globalThis.L = L;
-        await import('@geoman-io/leaflet-geoman-free');
-        if (mounted) setPmReady(true);
-      } catch (err) {
-        console.error('Gagal memuat Leaflet-Geoman:', err);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const handleAddWaypoint = useCallback((point) => {
     setWaypoints((prev) => [...prev, point]);
@@ -229,7 +213,7 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
           </Fragment>
         ))}
 
-        {drawMode && isEditing && waypoints.length > 1 && pmReady && (
+        {drawMode && isEditing && waypoints.length > 1 && (
           <GeomanEditLayer
             waypoints={waypoints}
             onUpdate={(coords) => setWaypoints(coords)}
