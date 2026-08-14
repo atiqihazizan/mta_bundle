@@ -230,6 +230,7 @@ let currentZoom = 17;   // integer tile zoom (used by setView for URLs)
 let currentLyrs = 'm';
 let fracZoom    = 17.0; // float display zoom
 let vb = { x: 0, y: 0, w: VW, h: VH }; // current SVG viewBox
+let txMin = 0, tyMin = 0; // top-left tile index (set by buildMap)
 
 const lats = coords.map(c => c[0]), lngs = coords.map(c => c[1]);
 const minLat = Math.min(...lats), maxLat = Math.max(...lats);
@@ -268,9 +269,9 @@ function buildMap(zoom, lyrs) {
   const cTX = lngTF(cLng);
   const cTY = latTF(cLat);
 
-  // Top-left tile index — centered on route
-  const txMin = Math.round(cTX - TW / 2);
-  const tyMin = Math.round(cTY - TH / 2);
+  // Top-left tile index — centered on route (exposed globally for fillMissingTiles)
+  txMin = Math.round(cTX - TW / 2);
+  tyMin = Math.round(cTY - TH / 2);
 
   // Convert lat/lng to local SVG coords (0,0 = top-left of txMin,tyMin tile)
   function toSvg(lat, lng) {
@@ -405,6 +406,42 @@ function setView(lyrs, btn) {
   document.getElementById('view-label').textContent = lyrs === 'm' ? 'Peta Jalan' : 'Satelit';
 }
 
+// ── Load tiles yang diperlukan untuk viewBox semasa ───────────────────────────
+function fillMissingTiles() {
+  const svg = document.getElementById('map-svg');
+  const N2  = 1 << currentZoom;
+
+  const colMin = Math.floor(vb.x / TS);
+  const colMax = Math.floor((vb.x + vb.w - 1) / TS);
+  const rowMin = Math.floor(vb.y / TS);
+  const rowMax = Math.floor((vb.y + vb.h - 1) / TS);
+
+  const existing = new Set(
+    [...svg.querySelectorAll('.map-tile')].map(t => `${t.getAttribute('data-tx')},${t.getAttribute('data-ty')}`)
+  );
+
+  // Insert tiles sebelum route/markers supaya kekal di belakang
+  const firstNonTile = [...svg.children].find(el => !el.classList.contains('map-tile'));
+
+  for (let row = rowMin; row <= rowMax; row++) {
+    for (let col = colMin; col <= colMax; col++) {
+      const tx = txMin + col;
+      const ty = tyMin + row;
+      if (tx < 0 || tx >= N2 || ty < 0 || ty >= N2) continue;
+      if (existing.has(`${tx},${ty}`)) continue;
+
+      const s   = (tx + ty) % 4;
+      const img = mk('image', {
+        x: col * TS, y: row * TS, width: TS, height: TS,
+        href: `https://mt${s}.google.com/vt/lyrs=${currentLyrs}&x=${tx}&y=${ty}&z=${currentZoom}`,
+        'data-tx': tx, 'data-ty': ty, 'data-s': s
+      });
+      img.classList.add('map-tile');
+      svg.insertBefore(img, firstNonTile || null);
+    }
+  }
+}
+
 // ── ViewBox helpers ───────────────────────────────────────────────────────────
 function applyViewBox() {
   const svg = document.getElementById('map-svg');
@@ -412,6 +449,7 @@ function applyViewBox() {
   document.getElementById('zoom-label').textContent = 'Z' + fracZoom.toFixed(1);
   document.getElementById('btn-zin').disabled  = fracZoom >= MAX_ZOOM;
   document.getElementById('btn-zout').disabled = fracZoom <= MIN_ZOOM;
+  fillMissingTiles();
 }
 
 // focusSvgX/Y: SVG-space point to zoom toward (default centre)
