@@ -35,6 +35,13 @@ const waypointIcon = L.divIcon({
   iconAnchor: [6, 6],
 });
 
+const midpointIcon = L.divIcon({
+  className: '',
+  html: `<div style="background:#2563eb;width:9px;height:9px;border-radius:50%;border:2px solid white;opacity:0.45;cursor:pointer"></div>`,
+  iconSize: [9, 9],
+  iconAnchor: [4, 4],
+});
+
 const nearestSegmentIndex = (lat, lng, waypoints) => {
   let minDist = Infinity;
   let insertAt = waypoints.length;
@@ -80,10 +87,10 @@ const calculateDistance = (coords) => {
   return total;
 };
 
-function DrawEvents({ drawMode, onAddWaypoint }) {
+function DrawEvents({ drawMode, isEditing, onAddWaypoint }) {
   useMapEvents({
     click(e) {
-      if (drawMode) onAddWaypoint([e.latlng.lat, e.latlng.lng]);
+      if (drawMode && !isEditing) onAddWaypoint([e.latlng.lat, e.latlng.lng]);
     },
   });
   return null;
@@ -91,11 +98,13 @@ function DrawEvents({ drawMode, onAddWaypoint }) {
 
 DrawEvents.propTypes = {
   drawMode: PropTypes.bool.isRequired,
+  isEditing: PropTypes.bool.isRequired,
   onAddWaypoint: PropTypes.func.isRequired,
 };
 
 export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete, initialWaypoints = [] }) {
   const [waypoints, setWaypoints] = useState([]);
+  const isEditing = initialWaypoints.length > 0;
 
   const handleAddWaypoint = useCallback((point) => {
     setWaypoints((prev) => [...prev, point]);
@@ -140,7 +149,7 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
     <>
       <MapContainer center={CENTER} zoom={15} style={mapContainerStyle}>
         <TileLayer url={TILE_URL} attribution="&copy; Google Maps" />
-        <DrawEvents drawMode={drawMode} onAddWaypoint={handleAddWaypoint} />
+        <DrawEvents drawMode={drawMode} isEditing={isEditing} onAddWaypoint={handleAddWaypoint} />
 
         {routes.map((route, index) => (
           <Fragment key={route.id}>
@@ -185,14 +194,30 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
           <Polyline
             positions={waypoints}
             pathOptions={{ color: '#2563eb', weight: 4, dashArray: '6 4' }}
-            eventHandlers={{
-              click(e) {
-                L.DomEvent.stopPropagation(e.originalEvent);
-                handleInsertWaypoint(e.latlng.lat, e.latlng.lng);
-              },
-            }}
           />
         )}
+
+        {drawMode && waypoints.length > 1 &&
+          waypoints.slice(0, -1).map((wp, i) => {
+            const mid = [(wp[0] + waypoints[i + 1][0]) / 2, (wp[1] + waypoints[i + 1][1]) / 2];
+            return (
+              <Marker
+                key={`mid-${i}`}
+                position={mid}
+                icon={midpointIcon}
+                eventHandlers={{
+                  click() {
+                    setWaypoints((prev) => [
+                      ...prev.slice(0, i + 1),
+                      mid,
+                      ...prev.slice(i + 1),
+                    ]);
+                  },
+                }}
+              />
+            );
+          })
+        }
 
         {drawMode && waypoints.length > 0 && (
           <Marker
