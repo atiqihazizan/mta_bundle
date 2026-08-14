@@ -464,8 +464,8 @@ function setFracZoom(newFrac, focusSvgX = VW / 2, focusSvgY = VH / 2) {
   vb.y = focusSvgY - fy * vb.h;
   fracZoom = newFrac;
 
-  // Rebuild tiles when integer zoom changes
-  const newTileZoom = Math.round(fracZoom);
+  // Rebuild tiles pada integer boundary — Math.floor supaya Z17.x kekal guna Z17
+  const newTileZoom = Math.floor(fracZoom);
   if (newTileZoom !== currentZoom && newTileZoom >= MIN_ZOOM && newTileZoom <= MAX_ZOOM) {
     buildMap(newTileZoom, currentLyrs);
     // Reset viewBox centred on route, scaled to current fracZoom
