@@ -48,18 +48,13 @@
       border: 1px solid #cbd5e1;
       border-radius: 5px;
       overflow: hidden;
-      flex: 1;
-      min-height: 200mm;
-      position: relative;
       background: #e8edf2;
     }
 
     .map-wrap svg {
       display: block;
       width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0; left: 0;
+      height: auto;
     }
 
     .legend {
@@ -218,17 +213,23 @@ const coords = [
   [5.388248,100.464617]
 ];
 
-const NS  = 'http://www.w3.org/2000/svg';
-const TS  = 256;
-const PAD = 1;
+const NS      = 'http://www.w3.org/2000/svg';
+const TS      = 256;
+const TW      = 5;   // tiles wide  — FIXED, viewBox sentiasa TW*256
+const TH      = 6;   // tiles tall  — FIXED, viewBox sentiasa TH*256
+const VW      = TW * TS;  // 1280
+const VH      = TH * TS;  // 1536
+const SW      = 12;  // stroke width dalam viewBox units — TIDAK berubah
 const MIN_ZOOM = 14, MAX_ZOOM = 20;
 
-let currentZoom = 16;
+let currentZoom = 17;
 let currentLyrs = 'm';
 
 const lats = coords.map(c => c[0]), lngs = coords.map(c => c[1]);
 const minLat = Math.min(...lats), maxLat = Math.max(...lats);
 const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+const cLat   = (minLat + maxLat) / 2;
+const cLng   = (minLng + maxLng) / 2;
 
 function haversine(a, b) {
   const R = 6371, dLat=(b[0]-a[0])*Math.PI/180, dLon=(b[1]-a[1])*Math.PI/180;
@@ -243,54 +244,47 @@ function mk(tag, attrs) {
 }
 
 // ── Core build function ───────────────────────────────────────────────────────
+// viewBox SENTIASA 0 0 1280 1536 — tiles display saiz tetap, text konsisten
 function buildMap(zoom, lyrs) {
   currentZoom = zoom;
   currentLyrs = lyrs;
 
   const N2 = 1 << zoom;
 
-  // Global pixel coordinates (scale with zoom — key to consistent text size)
-  function lngPx(lng) { return (lng + 180) / 360 * N2 * TS; }
-  function latPx(lat) {
+  // Tile fraction coords
+  function lngTF(lng) { return (lng + 180) / 360 * N2; }
+  function latTF(lat) {
     const r = lat * Math.PI / 180;
-    return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * N2 * TS;
+    return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * N2;
   }
 
-  // Route pixel bounds
-  const pxXs = coords.map(c => lngPx(c[1]));
-  const pxYs = coords.map(c => latPx(c[0]));
-  const pxMinX = Math.min(...pxXs), pxMaxX = Math.max(...pxXs);
-  const pxMinY = Math.min(...pxYs), pxMaxY = Math.max(...pxYs);
+  // Center tile (float)
+  const cTX = lngTF(cLng);
+  const cTY = latTF(cLat);
 
-  // Margin: 25% of route span — stays proportional at any zoom
-  const mX = (pxMaxX - pxMinX) * 0.25;
-  const mY = (pxMaxY - pxMinY) * 0.25;
+  // Top-left tile index — centered on route
+  const txMin = Math.round(cTX - TW / 2);
+  const tyMin = Math.round(cTY - TH / 2);
 
-  const vx0 = pxMinX - mX, vy0 = pxMinY - mY;
-  const vx1 = pxMaxX + mX, vy1 = pxMaxY + mY;
-  const vW  = vx1 - vx0,   vH  = vy1 - vy0;
+  // Convert lat/lng to local SVG coords (0,0 = top-left of txMin,tyMin tile)
+  function toSvg(lat, lng) {
+    return {
+      x: (lngTF(lng) - txMin) * TS,
+      y: (latTF(lat) - tyMin) * TS
+    };
+  }
 
-  // Tile range that covers the viewport
-  const txMin = Math.floor(vx0 / TS), txMax = Math.floor(vx1 / TS);
-  const tyMin = Math.floor(vy0 / TS), tyMax = Math.floor(vy1 / TS);
-
-  // Fixed stroke in viewport units — stays same physical size at all zooms
-  const sw = vW / 80;
-
-  // SVG uses global pixel space; viewBox clips to route area
   const svg = document.getElementById('map-svg');
   svg.innerHTML = '';
-  svg.setAttribute('viewBox', `${vx0} ${vy0} ${vW} ${vH}`);
+  svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`);
 
-  // Route point in global pixels
-  function toSvg(lat, lng) { return { x: lngPx(lng), y: latPx(lat) }; }
-
-  // ── Tiles (placed at global pixel positions) ──────────────────────────────
-  for (let ty = tyMin; ty <= tyMax; ty++) {
-    for (let tx = txMin; tx <= txMax; tx++) {
-      const s = (tx + ty) % 4;
+  // ── Tiles ─────────────────────────────────────────────────────────────────
+  for (let row = 0; row < TH; row++) {
+    for (let col = 0; col < TW; col++) {
+      const tx = txMin + col, ty = tyMin + row;
+      const s  = (tx + ty) % 4;
       const img = mk('image', {
-        x: tx * TS, y: ty * TS,
+        x: col * TS, y: row * TS,
         width: TS, height: TS,
         href: `https://mt${s}.google.com/vt/lyrs=${lyrs}&x=${tx}&y=${ty}&z=${zoom}`,
         'data-tx': tx, 'data-ty': ty, 'data-s': s
@@ -300,96 +294,93 @@ function buildMap(zoom, lyrs) {
     }
   }
 
-  // ── Route ──────────────────────────────────────────────────────────────────
+  // ── Route ─────────────────────────────────────────────────────────────────
   const pts = coords.map(c => { const p = toSvg(c[0],c[1]); return `${p.x},${p.y}`; }).join(' ');
 
   svg.appendChild(mk('polyline', {
     points: pts, fill: 'none',
-    stroke: 'rgba(255,255,255,0.7)', 'stroke-width': sw + 3,
+    stroke: 'rgba(255,255,255,0.75)', 'stroke-width': SW + 4,
     'stroke-linecap': 'round', 'stroke-linejoin': 'round'
   }));
   svg.appendChild(mk('polyline', {
     points: pts, fill: 'none',
-    stroke: '#e03030', 'stroke-width': sw,
+    stroke: '#e03030', 'stroke-width': SW,
     'stroke-linecap': 'round', 'stroke-linejoin': 'round',
-    'stroke-opacity': '0.88'
+    'stroke-opacity': '0.9'
   }));
 
-  // Direction arrows
-  const arrSz = sw * 1.2;
+  // Arrows
   for (let i = 4; i < coords.length - 1; i += 9) {
     const a = toSvg(coords[i][0], coords[i][1]);
     const b = toSvg(coords[i+1][0], coords[i+1][1]);
     const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
     svg.appendChild(mk('polygon', {
-      points: `0,${-arrSz} ${arrSz*1.4},0 0,${arrSz}`,
-      fill: '#fff', opacity: '0.88',
+      points: `0,${-SW} ${SW*1.5},0 0,${SW}`,
+      fill: '#fff', opacity: '0.9',
       transform: `translate(${mx},${my}) rotate(${ang})`
     }));
   }
 
   // ── Markers ────────────────────────────────────────────────────────────────
   function pinMarker(lat, lng, color, letter, label) {
-    const p = toSvg(lat, lng);
-    const sz = sw * 2.2;
+    const p  = toSvg(lat, lng);
+    const sz = SW * 2.8;
     const g  = document.createElementNS(NS, 'g');
+
     g.appendChild(mk('path', {
       d: 'M0,-1 C-0.45,-1 -0.45,-0.36 0,0 C0.45,-0.36 0.45,-1 0,-1Z',
-      fill: color, stroke: '#fff', 'stroke-width': 0.08,
+      fill: color, stroke: '#fff', 'stroke-width': 0.06,
       transform: `translate(${p.x},${p.y}) scale(${sz})`
     }));
     g.appendChild(mk('circle', { cx: p.x, cy: p.y - sz*0.73, r: sz*0.27, fill: '#fff' }));
     const lt = mk('text', {
-      x: p.x, y: p.y - sz*0.58,
+      x: p.x, y: p.y - sz*0.57,
       'text-anchor': 'middle', fill: color,
-      'font-size': sz * 0.35, 'font-weight': 'bold'
+      'font-size': sz * 0.34, 'font-weight': 'bold'
     });
     lt.textContent = letter;
     g.appendChild(lt);
 
-    // Label pill
-    const lx = p.x + sz * 0.7;
-    const lbg = mk('rect', { x: lx, y: p.y - sz - 2, width: sz * 2.8, height: sz * 0.72, rx: sz*0.14, fill: color, opacity: '0.93' });
+    const lx = p.x + sz * 0.65;
+    g.appendChild(mk('rect', { x: lx, y: p.y - sz*1.05, width: sz*2.9, height: sz*0.7, rx: sz*0.12, fill: color, opacity:'0.92' }));
     const ltxt = mk('text', {
-      x: lx + sz * 1.4, y: p.y - sz + sz*0.5 - 2,
+      x: lx + sz*1.45, y: p.y - sz*0.6,
       'text-anchor': 'middle', fill: '#fff',
-      'font-size': sz * 0.44, 'font-weight': '700'
+      'font-size': sz * 0.42, 'font-weight': '700'
     });
     ltxt.textContent = label;
-    g.append(lbg, ltxt);
+    g.appendChild(ltxt);
     svg.appendChild(g);
   }
 
   pinMarker(coords[0][0], coords[0][1], '#16a34a', 'A', 'MULA');
   pinMarker(coords[coords.length-1][0], coords[coords.length-1][1], '#dc2626', 'B', 'TAMAT');
 
-  // ── Scale bar (in global pixel space) ────────────────────────────────────
-  const cosLat = Math.cos(((minLat+maxLat)/2) * Math.PI/180);
+  // ── Scale bar ─────────────────────────────────────────────────────────────
+  const cosLat = Math.cos(cLat * Math.PI / 180);
   const mPerPx = (40075016.686 * cosLat) / (N2 * TS);
-  const barM   = zoom >= 18 ? 50 : zoom >= 16 ? 200 : zoom === 15 ? 500 : 1000;
+  const barM   = zoom >= 19 ? 20 : zoom >= 18 ? 50 : zoom >= 16 ? 200 : zoom === 15 ? 500 : 1000;
   const barPx  = barM / mPerPx;
-  const bx = vx0 + sw * 0.8, by = vy1 - sw * 0.8;
-  const fs = sw * 1.0;
+  const bx = 16, by = VH - 18;
 
   const sg = document.createElementNS(NS, 'g');
-  sg.appendChild(mk('rect', { x: bx-sw*0.4, y: by-fs*2, width: barPx+fs*3.5, height: fs*2.6, rx: sw*0.3, fill: 'rgba(255,255,255,0.88)' }));
-  sg.appendChild(mk('line', { x1:bx, y1:by, x2:bx+barPx, y2:by, stroke:'#1e293b', 'stroke-width': sw*0.18, 'stroke-linecap':'square' }));
-  sg.appendChild(mk('line', { x1:bx,       y1:by-sw*0.3, x2:bx,       y2:by+sw*0.3, stroke:'#1e293b', 'stroke-width':sw*0.14 }));
-  sg.appendChild(mk('line', { x1:bx+barPx, y1:by-sw*0.3, x2:bx+barPx, y2:by+sw*0.3, stroke:'#1e293b', 'stroke-width':sw*0.14 }));
-  const st = mk('text', { x:bx+barPx/2, y:by-fs*0.3, 'text-anchor':'middle', fill:'#1e293b', 'font-size':fs, 'font-weight':'600' });
+  sg.appendChild(mk('rect', { x:bx-4, y:by-22, width:barPx+56, height:28, rx:4, fill:'rgba(255,255,255,0.9)' }));
+  sg.appendChild(mk('line', { x1:bx, y1:by, x2:bx+barPx, y2:by, stroke:'#1e293b', 'stroke-width':2.5, 'stroke-linecap':'square' }));
+  sg.appendChild(mk('line', { x1:bx,       y1:by-5, x2:bx,       y2:by+5, stroke:'#1e293b', 'stroke-width':1.5 }));
+  sg.appendChild(mk('line', { x1:bx+barPx, y1:by-5, x2:bx+barPx, y2:by+5, stroke:'#1e293b', 'stroke-width':1.5 }));
+  const st = mk('text', { x:bx+barPx/2, y:by-7, 'text-anchor':'middle', fill:'#1e293b', 'font-size':12, 'font-weight':'600' });
   st.textContent = barM >= 1000 ? (barM/1000)+' km' : barM+' m';
   sg.appendChild(st);
   svg.appendChild(sg);
 
   // ── Compass ───────────────────────────────────────────────────────────────
-  const cr = sw * 1.8;
-  const cx = vx1 - cr - sw * 0.6, cy2 = vy1 - cr - sw * 0.6;
+  const cr = 22, cx = VW - 32, cy2 = VH - 32;
   const cg = document.createElementNS(NS, 'g');
-  cg.appendChild(mk('circle', { cx, cy: cy2, r: cr, fill:'rgba(255,255,255,0.9)', stroke:'#94a3b8', 'stroke-width': sw*0.07 }));
-  cg.appendChild(mk('polygon', { points:`${cx},${cy2-cr*0.8} ${cx-cr*0.22},${cy2} ${cx+cr*0.22},${cy2}`, fill:'#1e3a5f' }));
-  cg.appendChild(mk('polygon', { points:`${cx},${cy2+cr*0.8} ${cx-cr*0.22},${cy2} ${cx+cr*0.22},${cy2}`, fill:'#cbd5e1' }));
-  const cN = mk('text', { x:cx, y:cy2-cr*0.84, 'text-anchor':'middle', fill:'#1e3a5f', 'font-size':cr*0.44, 'font-weight':'700' });
+  cg.appendChild(mk('circle', { cx, cy:cy2, r:cr, fill:'rgba(255,255,255,0.92)', stroke:'#94a3b8', 'stroke-width':1 }));
+  cg.appendChild(mk('polygon', { points:`${cx},${cy2-18} ${cx-5},${cy2} ${cx+5},${cy2}`, fill:'#1e3a5f' }));
+  cg.appendChild(mk('polygon', { points:`${cx},${cy2+18} ${cx-5},${cy2} ${cx+5},${cy2}`, fill:'#cbd5e1' }));
+  const cN = mk('text', { x:cx, y:cy2-20, 'text-anchor':'middle', fill:'#1e3a5f', 'font-size':10, 'font-weight':'700' });
   cN.textContent = 'U';
   cg.appendChild(cN);
   svg.appendChild(cg);
