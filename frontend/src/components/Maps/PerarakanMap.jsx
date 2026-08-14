@@ -174,8 +174,9 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
         <TileLayer url={TILE_URL} attribution="&copy; Google Maps" />
         <DrawEvents drawMode={drawMode} isEditing={isEditing} onAddWaypoint={handleAddWaypoint} />
 
-        {routes.map((route, index) => (
-          <Fragment key={route.id}>
+        {routes.map((route, index) => {
+          if (isEditing && activeRoute?.id === route.id) return null;
+          return <Fragment key={route.id}>
             <Polyline
               positions={route.coords}
               pathOptions={{
@@ -210,8 +211,8 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
                 </Marker>
               </>
             )}
-          </Fragment>
-        ))}
+          </Fragment>;
+        })}
 
         {drawMode && isEditing && waypoints.length > 1 && (
           <GeomanEditLayer
