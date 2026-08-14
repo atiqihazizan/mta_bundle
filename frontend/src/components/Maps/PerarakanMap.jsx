@@ -130,7 +130,7 @@ GeomanEditLayer.propTypes = {
   onUpdate: PropTypes.func.isRequired,
 };
 
-export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete, initialWaypoints = [] }) {
+export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete, initialWaypoints = [], editingRouteId = null }) {
   const [waypoints, setWaypoints] = useState([]);
 
   const isEditing = drawMode && initialWaypoints.length > 0;
@@ -175,7 +175,7 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
         <DrawEvents drawMode={drawMode} isEditing={isEditing} onAddWaypoint={handleAddWaypoint} />
 
         {routes.map((route, index) => {
-          if (isEditing && activeRoute?.id === route.id) return null;
+          if (isEditing && editingRouteId === route.id) return null;
           return <Fragment key={route.id}>
             <Polyline
               positions={route.coords}
@@ -326,4 +326,5 @@ PerarakanMap.propTypes = {
   activeRoute: PropTypes.object,
   onRouteComplete: PropTypes.func,
   initialWaypoints: PropTypes.array,
+  editingRouteId: PropTypes.number,
 };

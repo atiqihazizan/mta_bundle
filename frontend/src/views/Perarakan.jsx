@@ -227,6 +227,7 @@ export default function Perarakan() {
             activeRoute={activeRoute}
             onRouteComplete={handleRouteComplete}
             initialWaypoints={editingRoute?.coords ?? []}
+            editingRouteId={editingRoute?.id ?? null}
           />
 
           {drawMode && (
