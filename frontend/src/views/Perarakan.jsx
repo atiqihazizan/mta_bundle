@@ -16,20 +16,18 @@ import { useStateContext } from "../contexts/ContextProvider";
 import axiosClient from "../axios";
 import { printRoute } from "../utils/printPerarakan";
 
-const navigateRoute = (route) => {
+const buildMapsUrl = (route) => {
   const coords = route.coords;
-  if (!coords || coords.length < 2) return;
+  if (!coords || coords.length < 2) return '#';
   const origin = `${coords[0][0]},${coords[0][1]}`;
   const destination = `${coords[coords.length - 1][0]},${coords[coords.length - 1][1]}`;
-  // Sample max 8 waypoints secara sekata dari titik perantara
   const middle = coords.slice(1, -1);
   const step = Math.max(1, Math.floor(middle.length / 8));
   const sampled = middle.filter((_, i) => i % step === 0).slice(0, 8);
   const waypointsParam = sampled.length
     ? `&waypoints=${sampled.map((c) => `${c[0]},${c[1]}`).join('|')}`
     : '';
-  const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypointsParam}&travelmode=walking`;
-  window.open(url, '_blank');
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypointsParam}&travelmode=walking`;
 };
 
 export default function Perarakan() {
@@ -202,15 +200,15 @@ export default function Perarakan() {
                         color="green"
                         onChange={() => toggleVisible(route)}
                       />
-                      <IconButton
-                        variant="text"
-                        size="sm"
-                        color="green"
-                        title="Navigate di Google Maps"
-                        onClick={() => navigateRoute(route)}
+                      <a
+                        href={buildMapsUrl(route)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Buka laluan di Google Maps"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded text-green-600 hover:bg-green-50"
                       >
                         <MapPinIcon className="h-4 w-4" />
-                      </IconButton>
+                      </a>
                       <IconButton
                         variant="text"
                         size="sm"
