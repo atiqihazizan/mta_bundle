@@ -87,8 +87,9 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
     }
   }, [waypoints, onRouteComplete]);
 
-  const activeIndex = routes.findIndex((r) => r.id === activeRoute?.id);
-  const activeColor = activeIndex >= 0 ? COLORS[activeIndex % COLORS.length] : COLORS[0];
+  const displayRoute = activeRoute ?? routes[0] ?? null;
+  const displayIndex = routes.findIndex((r) => r.id === displayRoute?.id);
+  const displayColor = displayIndex >= 0 ? COLORS[displayIndex % COLORS.length] : COLORS[0];
 
   return (
     <>
@@ -159,17 +160,17 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
         )}
       </MapContainer>
 
-      {activeRoute && !drawMode && (
+      {displayRoute && !drawMode && (
         <div className="absolute bottom-4 right-4 z-[1000] min-w-[200px] rounded-lg bg-white p-3 text-sm shadow-xl">
           <div className="flex items-center gap-2">
             <span
               className="inline-block h-3 w-3 rounded-full"
-              style={{ backgroundColor: activeColor }}
+              style={{ backgroundColor: displayColor }}
             />
-            <span className="font-semibold text-gray-900">{activeRoute.name}</span>
+            <span className="font-semibold text-gray-900">{displayRoute.name}</span>
           </div>
-          <div className="mt-1 text-gray-600">Jarak: {activeRoute.distance_km ?? '0.00'} km</div>
-          <div className="text-gray-600">Waypoint: {activeRoute.coords?.length ?? 0} titik</div>
+          <div className="mt-1 text-gray-600">Jarak: {displayRoute.distance_km ?? '0.00'} km</div>
+          <div className="text-gray-600">Waypoint: {displayRoute.coords?.length ?? 0} titik</div>
         </div>
       )}
     </>
