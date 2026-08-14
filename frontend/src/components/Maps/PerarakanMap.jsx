@@ -28,6 +28,30 @@ const endIcon = L.divIcon({
   iconAnchor: [14, 14],
 });
 
+const waypointIcon = L.divIcon({
+  className: '',
+  html: `<div style="background:#2563eb;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.5);cursor:grab"></div>`,
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+});
+
+const nearestSegmentIndex = (lat, lng, waypoints) => {
+  let minDist = Infinity;
+  let insertAt = waypoints.length;
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const [lat1, lng1] = waypoints[i];
+    const [lat2, lng2] = waypoints[i + 1];
+    const mx = (lat1 + lat2) / 2;
+    const my = (lng1 + lng2) / 2;
+    const d = Math.hypot(lat - mx, lng - my);
+    if (d < minDist) {
+      minDist = d;
+      insertAt = i + 1;
+    }
+  }
+  return insertAt;
+};
+
 const CENTER = [5.388783338110887, 100.46425691764681];
 const TILE_URL =
   'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=AIzaSyAksuOzVFXO7VubvpbpZK7WqKvy0ku8Zbo';
@@ -75,6 +99,23 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
 
   const handleAddWaypoint = useCallback((point) => {
     setWaypoints((prev) => [...prev, point]);
+  }, []);
+
+  const handleDragWaypoint = useCallback((index, { lat, lng }) => {
+    setWaypoints((prev) => prev.map((wp, i) => (i === index ? [lat, lng] : wp)));
+  }, []);
+
+  const handleInsertWaypoint = useCallback((lat, lng) => {
+    setWaypoints((prev) => {
+      const insertAt = nearestSegmentIndex(lat, lng, prev);
+      return [...prev.slice(0, insertAt), [lat, lng], ...prev.slice(insertAt)];
+    });
+  }, []);
+
+  const handleDeleteWaypoint = useCallback((index) => {
+    setWaypoints((prev) =>
+      prev.length > 2 ? prev.filter((_, i) => i !== index) : prev
+    );
   }, []);
 
   useEffect(() => {
@@ -140,25 +181,67 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
           </Fragment>
         ))}
 
-        {drawMode && waypoints.length > 0 && (
+        {drawMode && waypoints.length > 1 && (
           <Polyline
             positions={waypoints}
             pathOptions={{ color: '#2563eb', weight: 4, dashArray: '6 4' }}
+            eventHandlers={{
+              click(e) {
+                L.DomEvent.stopPropagation(e.originalEvent);
+                handleInsertWaypoint(e.latlng.lat, e.latlng.lng);
+              },
+            }}
           />
         )}
 
         {drawMode && waypoints.length > 0 && (
-          <Marker position={waypoints[0]} icon={startIcon}>
+          <Marker
+            position={waypoints[0]}
+            icon={startIcon}
+            draggable
+            eventHandlers={{
+              dragend: (e) => handleDragWaypoint(0, e.target.getLatLng()),
+              click: (e) => L.DomEvent.stopPropagation(e.originalEvent),
+            }}
+          >
             <Popup>
-              <span>Mula</span>
+              <span>Mula (drag untuk ubah)</span>
             </Popup>
           </Marker>
         )}
 
+        {drawMode &&
+          waypoints.map((wp, i) => {
+            if (i === 0 || i === waypoints.length - 1) return null;
+            return (
+              <Marker
+                key={i}
+                position={wp}
+                icon={waypointIcon}
+                draggable
+                title="Drag untuk ubah posisi. Klik kanan untuk padam"
+                eventHandlers={{
+                  dragend: (e) => handleDragWaypoint(i, e.target.getLatLng()),
+                  click: (e) => L.DomEvent.stopPropagation(e.originalEvent),
+                  contextmenu: () => handleDeleteWaypoint(i),
+                }}
+              />
+            );
+          })}
+
         {drawMode && waypoints.length > 1 && (
-          <Marker position={waypoints[waypoints.length - 1]} icon={endIcon}>
+          <Marker
+            position={waypoints[waypoints.length - 1]}
+            icon={endIcon}
+            draggable
+            eventHandlers={{
+              dragend: (e) =>
+                handleDragWaypoint(waypoints.length - 1, e.target.getLatLng()),
+              click: (e) => L.DomEvent.stopPropagation(e.originalEvent),
+            }}
+          >
             <Popup>
-              <span>Akhir</span>
+              <span>Akhir (drag untuk ubah)</span>
             </Popup>
           </Marker>
         )}
