@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import L from 'leaflet';
 import PropTypes from 'prop-types';
 
@@ -41,23 +42,6 @@ const midpointIcon = L.divIcon({
   iconSize: [9, 9],
   iconAnchor: [4, 4],
 });
-
-const nearestSegmentIndex = (lat, lng, waypoints) => {
-  let minDist = Infinity;
-  let insertAt = waypoints.length;
-  for (let i = 0; i < waypoints.length - 1; i++) {
-    const [lat1, lng1] = waypoints[i];
-    const [lat2, lng2] = waypoints[i + 1];
-    const mx = (lat1 + lat2) / 2;
-    const my = (lng1 + lng2) / 2;
-    const d = Math.hypot(lat - mx, lng - my);
-    if (d < minDist) {
-      minDist = d;
-      insertAt = i + 1;
-    }
-  }
-  return insertAt;
-};
 
 const CENTER = [5.388783338110887, 100.46425691764681];
 const TILE_URL =
@@ -102,9 +86,71 @@ DrawEvents.propTypes = {
   onAddWaypoint: PropTypes.func.isRequired,
 };
 
+function GeomanEditLayer({ waypoints, onUpdate }) {
+  const map = useMap();
+
+  useEffect(() => {
+    // Buat polyline layer dan enable geoman edit
+    const layer = L.polyline(waypoints, {
+      color: '#2563eb',
+      weight: 4,
+      dashArray: '6 4',
+    }).addTo(map);
+
+    layer.pm.enable({
+      allowSelfIntersection: false,
+      draggable: true,
+    });
+
+    // Update coords setiap kali waypoint berubah
+    const handleEdit = () => {
+      const latlngs = layer.getLatLngs();
+      const coords = latlngs.map((ll) => [ll.lat, ll.lng]);
+      onUpdate(coords);
+    };
+
+    layer.on('pm:edit', handleEdit);
+    layer.on('pm:vertexadded', handleEdit);
+    layer.on('pm:vertexremoved', handleEdit);
+    layer.on('pm:markerdragend', handleEdit);
+
+    // Cleanup semasa unmount
+    return () => {
+      layer.pm.disable();
+      map.removeLayer(layer);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null;
+}
+
+GeomanEditLayer.propTypes = {
+  waypoints: PropTypes.array.isRequired,
+  onUpdate: PropTypes.func.isRequired,
+};
+
 export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete, initialWaypoints = [] }) {
   const [waypoints, setWaypoints] = useState([]);
-  const isEditing = initialWaypoints.length > 0;
+  const [pmReady, setPmReady] = useState(false);
+
+  const isEditing = drawMode && initialWaypoints.length > 0;
+  const isDrawingNew = drawMode && !isEditing;
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (!globalThis.L) globalThis.L = L;
+        await import('@geoman-io/leaflet-geoman-free');
+        if (mounted) setPmReady(true);
+      } catch (err) {
+        console.error('Gagal memuat Leaflet-Geoman:', err);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleAddWaypoint = useCallback((point) => {
     setWaypoints((prev) => [...prev, point]);
@@ -112,13 +158,6 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
 
   const handleDragWaypoint = useCallback((index, { lat, lng }) => {
     setWaypoints((prev) => prev.map((wp, i) => (i === index ? [lat, lng] : wp)));
-  }, []);
-
-  const handleInsertWaypoint = useCallback((lat, lng) => {
-    setWaypoints((prev) => {
-      const insertAt = nearestSegmentIndex(lat, lng, prev);
-      return [...prev.slice(0, insertAt), [lat, lng], ...prev.slice(insertAt)];
-    });
   }, []);
 
   const handleDeleteWaypoint = useCallback((index) => {
@@ -190,14 +229,21 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
           </Fragment>
         ))}
 
-        {drawMode && waypoints.length > 1 && (
+        {drawMode && isEditing && waypoints.length > 1 && pmReady && (
+          <GeomanEditLayer
+            waypoints={waypoints}
+            onUpdate={(coords) => setWaypoints(coords)}
+          />
+        )}
+
+        {isDrawingNew && waypoints.length > 1 && (
           <Polyline
             positions={waypoints}
             pathOptions={{ color: '#2563eb', weight: 4, dashArray: '6 4' }}
           />
         )}
 
-        {drawMode && waypoints.length > 1 &&
+        {isDrawingNew && waypoints.length > 1 &&
           waypoints.slice(0, -1).map((wp, i) => {
             const mid = [(wp[0] + waypoints[i + 1][0]) / 2, (wp[1] + waypoints[i + 1][1]) / 2];
             return (
@@ -219,7 +265,7 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
           })
         }
 
-        {drawMode && waypoints.length > 0 && (
+        {isDrawingNew && waypoints.length > 0 && (
           <Marker
             position={waypoints[0]}
             icon={startIcon}
@@ -235,7 +281,7 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
           </Marker>
         )}
 
-        {drawMode &&
+        {isDrawingNew &&
           waypoints.map((wp, i) => {
             if (i === 0 || i === waypoints.length - 1) return null;
             return (
@@ -254,7 +300,7 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
             );
           })}
 
-        {drawMode && waypoints.length > 1 && (
+        {isDrawingNew && waypoints.length > 1 && (
           <Marker
             position={waypoints[waypoints.length - 1]}
             icon={endIcon}

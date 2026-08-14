@@ -232,7 +232,9 @@ export default function Perarakan() {
           {drawMode && (
             <div className="absolute bottom-4 left-1/2 z-[1000] w-[420px] max-w-[90%] -translate-x-1/2 rounded-lg bg-white p-4 shadow-xl">
               <Typography variant="small" color="blue-gray" className="text-center">
-                Klik pada peta untuk tambah waypoint
+                {editingRoute
+                  ? "Drag waypoint untuk ubah posisi. Klik vertex untuk padam."
+                  : "Klik pada peta untuk tambah waypoint"}
               </Typography>
               <div className="mt-2 flex items-center justify-between text-sm">
                 <span className="text-gray-600">
