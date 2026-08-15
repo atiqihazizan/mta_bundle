@@ -312,11 +312,11 @@ export default function Perarakan() {
         {/* Peta — lebar penuh baki */}
         <div className="relative h-full flex-1 overflow-hidden rounded-lg bg-white shadow">
           <PerarakanMap
-            routes={routes}
+            routes={activeRoute ? [activeRoute] : []}
             drawMode={drawMode}
             activeRoute={activeRoute}
             onRouteComplete={handleRouteComplete}
-            onRouteClick={(route) => setActiveRoute((prev) => prev?.id === route.id ? null : route)}
+            onRouteClick={() => setActiveRoute(null)}
             initialWaypoints={editingRoute?.coords ?? []}
             editingRouteId={editingRoute?.id ?? null}
           />
