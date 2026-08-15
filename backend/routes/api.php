@@ -39,6 +39,8 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/vpeople', [VoucherController::class,'listPeople']);
   Route::get('/nvchr', [TabungController::class,'nvchr']);
   Route::apiResource('jenazah', JenazahController::class);
+  Route::get('/perarakan/map-view', [PerarakanController::class, 'getMapView']);
+  Route::put('/perarakan/map-view', [PerarakanController::class, 'saveMapView']);
   Route::apiResource('perarakan', PerarakanController::class);
   Route::get('/jenazah/report/{yrmth}',[JenazahController::class,'report']);
   Route::get('/options',[AddressController::class,'options']);

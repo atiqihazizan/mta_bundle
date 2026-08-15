@@ -1,10 +1,11 @@
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import '@geoman-io/leaflet-geoman-free';
 import L from 'leaflet';
 import PropTypes from 'prop-types';
+import axiosClient from '../../axios';
 
 // Fix Leaflet icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -72,17 +73,25 @@ const calculateDistance = (coords) => {
   return total;
 };
 
-const ZOOM_KEY = 'perarakan_map_zoom';
-const CENTER_KEY = 'perarakan_map_center';
-
 function MapTracker() {
+  const saveTimeout = useRef(null);
+
   useMapEvents({
     zoomend(e) {
-      localStorage.setItem(ZOOM_KEY, e.target.getZoom());
+      const zoom = e.target.getZoom();
+      const { lat, lng } = e.target.getCenter();
+      clearTimeout(saveTimeout.current);
+      saveTimeout.current = setTimeout(() => {
+        axiosClient.put('/perarakan/map-view', { zoom, lat, lng }).catch(() => {});
+      }, 800);
     },
     moveend(e) {
       const { lat, lng } = e.target.getCenter();
-      localStorage.setItem(CENTER_KEY, JSON.stringify([lat, lng]));
+      const zoom = e.target.getZoom();
+      clearTimeout(saveTimeout.current);
+      saveTimeout.current = setTimeout(() => {
+        axiosClient.put('/perarakan/map-view', { zoom, lat, lng }).catch(() => {});
+      }, 800);
     },
   });
   return null;
@@ -148,6 +157,9 @@ GeomanEditLayer.propTypes = {
 
 export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete, initialWaypoints = [], editingRouteId = null }) {
   const [waypoints, setWaypoints] = useState([]);
+  const [initZoom, setInitZoom] = useState(15);
+  const [initCenter, setInitCenter] = useState(CENTER);
+  const [mapReady, setMapReady] = useState(false);
 
   const isEditing = drawMode && initialWaypoints.length > 0;
   const isDrawingNew = drawMode && !isEditing;
@@ -175,6 +187,16 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
   }, [drawMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    axiosClient.get('/perarakan/map-view')
+      .then(res => {
+        const { zoom, lat, lng } = res.data;
+        if (zoom) setInitZoom(zoom);
+        if (lat && lng) setInitCenter([lat, lng]);
+      })
+      .finally(() => setMapReady(true));
+  }, []);
+
+  useEffect(() => {
     if (onRouteComplete && waypoints.length > 0) {
       onRouteComplete(waypoints, calculateDistance(waypoints));
     }
@@ -186,9 +208,10 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
 
   return (
     <>
+      {mapReady ? (
       <MapContainer
-        center={JSON.parse(localStorage.getItem(CENTER_KEY)) || CENTER}
-        zoom={Number(localStorage.getItem(ZOOM_KEY)) || 15}
+        center={initCenter}
+        zoom={initZoom}
         style={mapContainerStyle}
       >
         <TileLayer url={TILE_URL} attribution="&copy; Google Maps" />
@@ -323,6 +346,7 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
           </Marker>
         )}
       </MapContainer>
+      ) : null}
 
       {displayRoute && !drawMode && (
         <div className="absolute bottom-4 right-4 z-[1000] min-w-[200px] rounded-lg bg-white p-3 text-sm shadow-xl">

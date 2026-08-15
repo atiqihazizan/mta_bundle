@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Http\Requests\PerarakanRequest;
 use App\Http\Resources\PerarakanResource;
 use App\Models\Perarakan;
@@ -11,6 +12,34 @@ class PerarakanController extends Controller
 	public function index()
 	{
 		return PerarakanResource::collection(Perarakan::all());
+	}
+
+	public function getMapView()
+	{
+		$row = Perarakan::first();
+
+		return response()->json([
+			'zoom' => $row?->map_zoom ?? 15,
+			'lat'  => $row?->map_lat,
+			'lng'  => $row?->map_lng,
+		]);
+	}
+
+	public function saveMapView(Request $request)
+	{
+		$data = $request->validate([
+			'zoom' => 'required|integer|min:1|max:20',
+			'lat'  => 'required|numeric',
+			'lng'  => 'required|numeric',
+		]);
+
+		Perarakan::query()->update([
+			'map_zoom' => $data['zoom'],
+			'map_lat'  => $data['lat'],
+			'map_lng'  => $data['lng'],
+		]);
+
+		return response()->json(['status' => true]);
 	}
 
 	public function store(PerarakanRequest $request)
