@@ -155,7 +155,7 @@ GeomanEditLayer.propTypes = {
   onUpdate: PropTypes.func.isRequired,
 };
 
-export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete, initialWaypoints = [], editingRouteId = null }) {
+export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete, onRouteClick, initialWaypoints = [], editingRouteId = null }) {
   const [waypoints, setWaypoints] = useState([]);
   const [initZoom, setInitZoom] = useState(15);
   const [initCenter, setInitCenter] = useState(CENTER);
@@ -225,17 +225,15 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
               positions={route.coords}
               pathOptions={{
                 color: COLORS[index % COLORS.length],
-                weight: 4,
-                opacity: activeRoute?.id === route.id ? 1 : 0.6,
+                weight: activeRoute?.id === route.id ? 6 : 4,
+                opacity: activeRoute?.id === route.id ? 1 : 0.5,
               }}
-            >
-              <Popup>
-                <div className="p-1">
-                  <h3 className="font-semibold">{route.name}</h3>
-                  <p className="text-gray-600 text-sm mt-1">Jarak: {route.distance_km ?? '0.00'} km</p>
-                </div>
-              </Popup>
-            </Polyline>
+              eventHandlers={{
+                click() {
+                  if (!drawMode && onRouteClick) onRouteClick(route);
+                },
+              }}
+            />
 
             {route.coords?.length >= 2 && (
               <>
@@ -370,6 +368,7 @@ PerarakanMap.propTypes = {
   drawMode: PropTypes.bool,
   activeRoute: PropTypes.object,
   onRouteComplete: PropTypes.func,
+  onRouteClick: PropTypes.func,
   initialWaypoints: PropTypes.array,
   editingRouteId: PropTypes.number,
 };
