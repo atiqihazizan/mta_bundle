@@ -202,7 +202,7 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
     }
   }, [waypoints, onRouteComplete]);
 
-  const displayRoute = activeRoute ?? routes[0] ?? null;
+  const displayRoute = activeRoute ?? null;
   const displayIndex = routes.findIndex((r) => r.id === displayRoute?.id);
   const displayColor = displayIndex >= 0 ? COLORS[displayIndex % COLORS.length] : COLORS[0];
 
