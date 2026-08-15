@@ -5,7 +5,6 @@ import {
   IconButton,
   Input,
   Spinner,
-  Switch,
   Typography,
 } from "@material-tailwind/react";
 import { CheckIcon, MapPinIcon, PencilIcon, PlusIcon, PrinterIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
@@ -158,21 +157,6 @@ export default function Perarakan() {
     }
   };
 
-  const toggleVisible = async (route) => {
-    try {
-      await axiosClient.put(`/perarakan/${route.id}`, {
-        name: route.name,
-        visible: !route.visible,
-        coords: route.coords,
-        distance: route.distance,
-      });
-      showToast(`Route '${route.name}' ${!route.visible ? "dipaparkan" : "disembunyikan"}`);
-      fetchRoutes();
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   const deleteRoute = async (route) => {
     if (!window.confirm(`Anda pasti hendak padam route '${route.name}'?`)) return;
     try {
@@ -275,13 +259,7 @@ export default function Perarakan() {
 
                     {/* Action bar */}
                     <div className="mt-1.5 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-                      <Switch
-                        checked={route.visible}
-                        color="green"
-                        onChange={() => toggleVisible(route)}
-                        className="scale-75"
-                      />
-                      <div className="ml-auto flex items-center">
+                      <div className="flex items-center">
                         <a
                           href={buildMapsUrl(route)}
                           target="_blank"
