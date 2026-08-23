@@ -12,6 +12,8 @@ use App\Http\Controllers\LettersController;
 use App\Http\Controllers\PeoplesController;
 use App\Http\Controllers\PerarakanController;
 use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\CheckpointController;
+use App\Http\Controllers\MapTitleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,7 +43,10 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::apiResource('jenazah', JenazahController::class);
   Route::get('/perarakan/map-view', [PerarakanController::class, 'getMapView']);
   Route::put('/perarakan/map-view', [PerarakanController::class, 'saveMapView']);
+  Route::get('/perarakan/title', [MapTitleController::class, 'show']);
+  Route::put('/perarakan/title', [MapTitleController::class, 'update']);
   Route::apiResource('perarakan', PerarakanController::class);
+  Route::apiResource('checkpoint', CheckpointController::class);
   Route::get('/jenazah/report/{yrmth}',[JenazahController::class,'report']);
   Route::get('/options',[AddressController::class,'options']);
   Route::get('/dashboard/stats',[AddressController::class,'dashboardStats']); // Endpoint baru

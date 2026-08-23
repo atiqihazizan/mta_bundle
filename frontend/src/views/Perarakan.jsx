@@ -11,6 +11,10 @@ import { CheckIcon, MapPinIcon, PencilIcon, PlusIcon, PrinterIcon, TrashIcon, XM
 import PageComponent from "../components/PageComponent";
 import Modal from "../components/Modal";
 import PerarakanMap from "../components/Maps/PerarakanMap";
+import DirectionPanel from "../components/Maps/DirectionPanel";
+import { CHECKPOINT_ICONS } from "../components/Maps/CheckpointLayer";
+import MapTitleOverlay, { MapTitleToggle } from "../components/Maps/MapTitleOverlay";
+import FlagIcon from "@heroicons/react/24/outline/FlagIcon";
 import { useStateContext } from "../contexts/ContextProvider";
 import axiosClient from "../axios";
 import { printRoute } from "../utils/printPerarakan";
@@ -44,6 +48,18 @@ export default function Perarakan() {
   const [saving, setSaving] = useState(false);
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState("");
+  const [tileProvider, setTileProvider] = useState("google_street");
+  const [checkpoints, setCheckpoints] = useState([]);
+  const [cpMode, setCpMode] = useState(false);
+  const [showCpForm, setShowCpForm] = useState(false);
+  const [pendingCp, setPendingCp] = useState(null);
+  const [editingCp, setEditingCp] = useState(null);
+  const [cpName, setCpName] = useState("");
+  const [cpLabel, setCpLabel] = useState("");
+  const [cpIcon, setCpIcon] = useState("pin");
+  const [cpColor, setCpColor] = useState("#ffffff");
+  const [mapTitle, setMapTitle] = useState(null);
+  const [showTitleControls, setShowTitleControls] = useState(false);
   const renameInputRef = useRef(null);
 
   const fetchRoutes = useCallback(async () => {
@@ -61,6 +77,127 @@ export default function Perarakan() {
   useEffect(() => {
     fetchRoutes();
   }, [fetchRoutes]);
+
+  const fetchCheckpoints = useCallback(async () => {
+    try {
+      const res = await axiosClient.get('/checkpoint');
+      setCheckpoints(res.data.data || []);
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCheckpoints();
+  }, [fetchCheckpoints]);
+
+  const fetchMapTitle = useCallback(async () => {
+    try {
+      const res = await axiosClient.get('/perarakan/title');
+      setMapTitle(res.data.data);
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMapTitle();
+  }, [fetchMapTitle]);
+
+  const saveMapTitle = useCallback(async (data) => {
+    try {
+      await axiosClient.put('/perarakan/title', data);
+      setMapTitle(data);
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
+  const handleAddCheckpoint = useCallback((lat, lng) => {
+    setEditingCp(null);
+    setCpName("");
+    setCpLabel("");
+    setCpIcon("pin");
+    setCpColor("#ffffff");
+    setPendingCp({ lat, lng });
+    setShowCpForm(true);
+  }, []);
+
+  const handleEditCheckpoint = (cp) => {
+    setCpMode(false);
+    setPendingCp(null);
+    setEditingCp(cp);
+    setCpName(cp.name);
+    setCpLabel(cp.label ?? "");
+    setCpIcon(cp.icon ?? "pin");
+    setCpColor(cp.label_color ?? "#ffffff");
+    setShowCpForm(true);
+  };
+
+  const handleDeleteCheckpoint = async (cp) => {
+    if (!window.confirm(`Padam checkpoint '${cp.name}'?`)) return;
+    try {
+      await axiosClient.delete(`/checkpoint/${cp.id}`);
+      showToast("Checkpoint dipadam");
+      fetchCheckpoints();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleMoveCheckpoint = async (cp, lat, lng) => {
+    try {
+      await axiosClient.put(`/checkpoint/${cp.id}`, {
+        name: cp.name,
+        label: cp.label,
+        label_color: cp.label_color ?? '#ffffff',
+        icon: cp.icon,
+        lat,
+        lng,
+        route_id: activeRoute?.id ?? null,
+      });
+      showToast(`Checkpoint '${cp.name}' dialihkan`);
+      fetchCheckpoints();
+    } catch (error) {
+      console.error(error);
+      showToast("Gagal alih checkpoint");
+      fetchCheckpoints();
+    }
+  };
+
+  const saveCheckpoint = async () => {
+    if (!cpName.trim()) return;
+    try {
+      if (editingCp?.id) {
+        await axiosClient.put(`/checkpoint/${editingCp.id}`, {
+          name: cpName.trim(),
+          label: cpLabel.trim() || null,
+          label_color: cpColor,
+          icon: cpIcon,
+          lat: editingCp.lat,
+          lng: editingCp.lng,
+        });
+        showToast("Checkpoint dikemaskini");
+      } else if (pendingCp) {
+        await axiosClient.post('/checkpoint', {
+          name: cpName.trim(),
+          label: cpLabel.trim() || null,
+          label_color: cpColor,
+          icon: cpIcon,
+          lat: pendingCp.lat,
+          lng: pendingCp.lng,
+          route_id: activeRoute?.id ?? null,
+        });
+        showToast("Checkpoint disimpan");
+      }
+      setShowCpForm(false);
+      setPendingCp(null);
+      setEditingCp(null);
+      fetchCheckpoints();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   useEffect(() => {
     if (renamingId && renameInputRef.current) {
@@ -289,6 +426,50 @@ export default function Perarakan() {
 
         {/* Peta — lebar penuh baki */}
         <div className="relative h-full flex-1 overflow-hidden rounded-lg bg-white shadow">
+          {/* Pemilih tile layer + mod checkpoint */}
+          <div className="absolute right-2 top-2 z-[1000] flex items-center gap-2 rounded-lg bg-white p-2 shadow-md">
+            <select
+              value={tileProvider}
+              onChange={(e) => setTileProvider(e.target.value)}
+              className="rounded border border-blue-gray-200 px-2 py-1 text-xs outline-none"
+              title="Pilih jenis peta"
+            >
+              <option value="google_street">Google Street</option>
+              <option value="google_satellite">Google Satelit</option>
+              <option value="google_terrain">Google Terrain</option>
+              <option value="osm">OpenStreetMap</option>
+            </select>
+            {activeRoute && !drawMode && (
+              <IconButton
+                color={cpMode ? "green" : "blue-gray"}
+                size="sm"
+                variant={cpMode ? "filled" : "outlined"}
+                title={cpMode ? "Mod checkpoint AKTIF — klik peta untuk plot" : "Aktifkan mod checkpoint"}
+                onClick={() => setCpMode((v) => !v)}
+              >
+                <FlagIcon className="h-4 w-4" />
+              </IconButton>
+            )}
+            <MapTitleToggle active={showTitleControls} onClick={() => setShowTitleControls((v) => !v)} />
+          </div>
+
+          {/* Title peta — drag untuk alih, klik 2× untuk edit teks */}
+          {mapTitle && (
+            <MapTitleOverlay
+              title={mapTitle}
+              onChange={setMapTitle}
+              onSave={saveMapTitle}
+              controlsOpen={showTitleControls}
+              onCloseControls={() => setShowTitleControls(false)}
+              onHide={() => {
+                const next = { ...mapTitle, visible: false };
+                setMapTitle(next);
+                saveMapTitle(next);
+                setShowTitleControls(false);
+              }}
+            />
+          )}
+
           <PerarakanMap
             routes={activeRoute ? [activeRoute] : []}
             drawMode={drawMode}
@@ -297,6 +478,14 @@ export default function Perarakan() {
             onRouteClick={() => setActiveRoute(null)}
             initialWaypoints={editingRoute?.coords ?? []}
             editingRouteId={editingRoute?.id ?? null}
+            tileProvider={tileProvider}
+            checkpoints={activeRoute ? checkpoints.filter((c) => c.route_id === activeRoute.id) : []}
+            cpMode={cpMode}
+            cpEditable={!!activeRoute && !drawMode}
+            onAddCheckpoint={handleAddCheckpoint}
+            onEditCheckpoint={handleEditCheckpoint}
+            onDeleteCheckpoint={handleDeleteCheckpoint}
+            onMoveCheckpoint={handleMoveCheckpoint}
           />
 
           {drawMode && (
@@ -327,6 +516,27 @@ export default function Perarakan() {
               </div>
             </div>
           )}
+
+          {/* Panel arah navigasi — muncul bila route dipilih */}
+          {activeRoute && !drawMode && (
+            <div className="absolute bottom-4 right-4 z-[1000]">
+              <DirectionPanel route={activeRoute} />
+            </div>
+          )}
+
+          {cpMode && !drawMode && (
+            <div className="absolute bottom-4 left-1/2 z-[1000] -translate-x-1/2 rounded-lg bg-green-600 px-4 py-2 text-sm text-white shadow-xl">
+              {activeRoute
+                ? `Mod Checkpoint — marker akan dirakam untuk route '${activeRoute.name}'`
+                : "Mod Checkpoint — pilih route dahulu supaya marker terikat pada route"}
+              <button
+                className="ml-3 underline hover:no-underline"
+                onClick={() => setCpMode(false)}
+              >
+                Tutup
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -355,6 +565,97 @@ export default function Perarakan() {
               onClick={saveRoute}
             >
               {saving ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        show={showCpForm}
+        onClose={() => {
+          setShowCpForm(false);
+          setPendingCp(null);
+          setEditingCp(null);
+        }}
+        title={editingCp ? "Kemaskini Checkpoint" : "Checkpoint Baharu"}
+      >
+        <div>
+          {pendingCp && (
+            <Typography variant="small" color="gray" className="mb-2">
+              Lokasi: {pendingCp.lat.toFixed(6)}, {pendingCp.lng.toFixed(6)}
+            </Typography>
+          )}
+          <Input
+            label="Nama Checkpoint"
+            value={cpName}
+            onChange={(e) => setCpName(e.target.value)}
+          />
+          <div className="mt-3">
+            <Input
+              label="Label (pilihan)"
+              value={cpLabel}
+              onChange={(e) => setCpLabel(e.target.value)}
+            />
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <Typography variant="small" className="text-blue-gray-700">
+              Warna label:
+            </Typography>
+            <input
+              type="color"
+              value={cpColor}
+              onChange={(e) => setCpColor(e.target.value)}
+              className="h-8 w-14 cursor-pointer rounded border border-blue-gray-200"
+              title="Pilih warna latar label"
+            />
+            <span
+              className="rounded px-2 py-0.5 text-xs font-bold text-blue-gray-900"
+              style={{ backgroundColor: cpColor, border: "1px solid rgba(0,0,0,0.15)" }}
+            >
+              {cpName.trim() || "Contoh"}
+            </span>
+          </div>
+          <div className="mt-3">
+            <Typography variant="small" className="mb-1 block text-blue-gray-700">
+              Ikon
+            </Typography>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(CHECKPOINT_ICONS).map(([key, emoji]) => (
+                <button
+                  key={key}
+                  type="button"
+                  title={key}
+                  onClick={() => setCpIcon(key)}
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg border text-xl transition-all ${
+                    cpIcon === key
+                      ? "border-blue-500 bg-blue-50 shadow-sm"
+                      : "border-transparent hover:border-blue-gray-100"
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              color="red"
+              size="sm"
+              onClick={() => {
+                setShowCpForm(false);
+                setPendingCp(null);
+                setEditingCp(null);
+              }}
+            >
+              Batal
+            </Button>
+            <Button
+              color="green"
+              size="sm"
+              disabled={!cpName.trim()}
+              onClick={saveCheckpoint}
+            >
+              Simpan
             </Button>
           </div>
         </div>

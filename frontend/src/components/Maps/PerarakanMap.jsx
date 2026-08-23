@@ -1,11 +1,13 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import '@geoman-io/leaflet-geoman-free';
 import L from 'leaflet';
 import PropTypes from 'prop-types';
 import axiosClient from '../../axios';
+import TileLayerManager from './TileLayerManager';
+import CheckpointLayer from './CheckpointLayer';
 
 // Fix Leaflet icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -46,8 +48,41 @@ const midpointIcon = L.divIcon({
 });
 
 const CENTER = [5.388783338110887, 100.46425691764681];
-const TILE_URL =
-  'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=AIzaSyAksuOzVFXO7VubvpbpZK7WqKvy0ku8Zbo';
+
+const arrowIcon = (rotationDeg) =>
+  L.divIcon({
+    className: '',
+    html: `<div style="transform:rotate(${rotationDeg}deg);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:12px solid #2563eb;opacity:0.85"></div>`,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
+  });
+
+const bearingBetween = (from, to) => {
+  const y =
+    Math.sin(((to[1] - from[1]) * Math.PI) / 180) *
+    Math.cos((to[0] * Math.PI) / 180);
+  const x =
+    Math.cos((from[0] * Math.PI) / 180) * Math.sin((to[0] * Math.PI) / 180) -
+    Math.sin((from[0] * Math.PI) / 180) *
+      Math.cos((to[0] * Math.PI) / 180) *
+      Math.cos(((to[1] - from[1]) * Math.PI) / 180);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+};
+
+const DirectionArrows = ({ coords }) => {
+  if (!coords || coords.length < 2) return null;
+  const arrows = [];
+  for (let i = 1; i < coords.length; i++) {
+    const prev = coords[i - 1];
+    const cur = coords[i];
+    const mid = [(prev[0] + cur[0]) / 2, (prev[1] + cur[1]) / 2];
+    const bearing = bearingBetween(prev, cur);
+    arrows.push(
+      <Marker key={`arrow-${i}`} position={mid} icon={arrowIcon(bearing)} interactive={false} />
+    );
+  }
+  return <Fragment>{arrows}</Fragment>;
+};
 
 const mapContainerStyle = {
   width: '100%',
@@ -97,10 +132,20 @@ function MapTracker() {
   return null;
 }
 
-function DrawEvents({ drawMode, isEditing, onAddWaypoint }) {
+function DrawEvents({ drawMode, cpMode, isEditing, onAddWaypoint, onAddCheckpoint }) {
   useMapEvents({
     click(e) {
+      // Abaikan klik yang datang dari marker atau popup
+      const target = e.originalEvent?.target;
+      if (
+        target &&
+        target.closest &&
+        target.closest(".leaflet-marker-icon, .leaflet-popup, .leaflet-popup-content")
+      ) {
+        return;
+      }
       if (drawMode && !isEditing) onAddWaypoint([e.latlng.lat, e.latlng.lng]);
+      if (cpMode) onAddCheckpoint?.(e.latlng.lat, e.latlng.lng);
     },
   });
   return null;
@@ -108,8 +153,10 @@ function DrawEvents({ drawMode, isEditing, onAddWaypoint }) {
 
 DrawEvents.propTypes = {
   drawMode: PropTypes.bool.isRequired,
+  cpMode: PropTypes.bool,
   isEditing: PropTypes.bool.isRequired,
   onAddWaypoint: PropTypes.func.isRequired,
+  onAddCheckpoint: PropTypes.func,
 };
 
 function GeomanEditLayer({ waypoints, onUpdate }) {
@@ -155,7 +202,7 @@ GeomanEditLayer.propTypes = {
   onUpdate: PropTypes.func.isRequired,
 };
 
-export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete, onRouteClick, initialWaypoints = [], editingRouteId = null }) {
+export default function PerarakanMap({ routes = [], drawMode = false, activeRoute = null, onRouteComplete, onRouteClick, initialWaypoints = [], editingRouteId = null, tileProvider = 'google_street', checkpoints = [], cpMode = false, cpEditable = false, onAddCheckpoint, onEditCheckpoint, onDeleteCheckpoint, onMoveCheckpoint }) {
   const [waypoints, setWaypoints] = useState([]);
   const [initZoom, setInitZoom] = useState(15);
   const [initCenter, setInitCenter] = useState(CENTER);
@@ -214,9 +261,17 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
         zoom={initZoom}
         style={mapContainerStyle}
       >
-        <TileLayer url={TILE_URL} attribution="&copy; Google Maps" />
+        <TileLayerManager provider={tileProvider} />
         <MapTracker />
-        <DrawEvents drawMode={drawMode} isEditing={isEditing} onAddWaypoint={handleAddWaypoint} />
+        <DrawEvents drawMode={drawMode} cpMode={cpMode} isEditing={isEditing} onAddWaypoint={handleAddWaypoint} onAddCheckpoint={onAddCheckpoint} />
+
+        <CheckpointLayer
+          checkpoints={checkpoints}
+          editable={cpEditable}
+          onEdit={onEditCheckpoint}
+          onDelete={onDeleteCheckpoint}
+          onMove={onMoveCheckpoint}
+        />
 
         {routes.map((route, index) => {
           if (isEditing && editingRouteId === route.id) return null;
@@ -255,6 +310,10 @@ export default function PerarakanMap({ routes = [], drawMode = false, activeRout
             )}
           </Fragment>;
         })}
+
+        {displayRoute && !drawMode && displayRoute.coords?.length >= 2 && (
+          <DirectionArrows coords={displayRoute.coords} />
+        )}
 
         {drawMode && isEditing && waypoints.length > 1 && (
           <GeomanEditLayer
@@ -371,4 +430,12 @@ PerarakanMap.propTypes = {
   onRouteClick: PropTypes.func,
   initialWaypoints: PropTypes.array,
   editingRouteId: PropTypes.number,
+  tileProvider: PropTypes.string,
+  checkpoints: PropTypes.array,
+  cpMode: PropTypes.bool,
+  cpEditable: PropTypes.bool,
+  onAddCheckpoint: PropTypes.func,
+  onEditCheckpoint: PropTypes.func,
+  onDeleteCheckpoint: PropTypes.func,
+  onMoveCheckpoint: PropTypes.func,
 };
