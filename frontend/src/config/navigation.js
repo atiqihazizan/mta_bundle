@@ -7,6 +7,7 @@ import {
 	TicketIcon,
 	HeartIcon,
 	MapIcon,
+	DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 
 export const navigation = [
@@ -19,4 +20,6 @@ export const navigation = [
 	{ name: "Terima Surat", to: "/letters", icon: EnvelopeIcon },
 	{ name: "Baucar", to: "/voucher", icon: TicketIcon },
 	{ name: "Jenazah", to: "/jenazah", icon: HeartIcon },
+	{ name: "Korban & Akikah", to: "/aqiqah/", icon: DocumentTextIcon, external: true },
+	{ name: "Pugutan Fitrah", to: "/amil/", icon: DocumentTextIcon, external: true },
 ];

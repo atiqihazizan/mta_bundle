@@ -9,20 +9,39 @@ import axiosClient from "../axios";
 
 const classNames = (...classes) => classes.filter(Boolean).join(" ");
 
-const NavItem = ({ item }) => (
-  <NavLink
-    to={item.to}
-    className={({ isActive }) =>
-      classNames(
-        isActive ? "bg-gray-700 text-white" : "text-gray-400 hover:text-white hover:bg-gray-700",
-        "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-      )
-    }
-  >
-    <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-    {item.name}
-  </NavLink>
-);
+const NavItem = ({ item }) => {
+  const baseClass = "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold";
+  const inactiveClass = "text-gray-400 hover:text-white hover:bg-gray-700";
+
+  if (item.external) {
+    return (
+      <a
+        href={item.to}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${baseClass} ${inactiveClass}`}
+      >
+        <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
+        {item.name}
+      </a>
+    );
+  }
+
+  return (
+    <NavLink
+      to={item.to}
+      className={({ isActive }) =>
+        classNames(
+          isActive ? "bg-gray-700 text-white" : inactiveClass,
+          baseClass
+        )
+      }
+    >
+      <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
+      {item.name}
+    </NavLink>
+  );
+};
 
 const ChangePasswordDialog = ({ isOpen, setIsOpen }) => {
   const [oldPassword, setOldPassword] = useState("");

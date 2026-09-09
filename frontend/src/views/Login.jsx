@@ -126,6 +126,27 @@ function Login() {
 					</div>
 				</form>
 			</div>
+
+			{/* Akses Awam */}
+			<div className="mt-6 flex flex-col gap-2">
+				<p className="text-xs text-center text-gray-500 mb-1">Akses Awam</p>
+				<a
+					href="/aqiqah/"
+					target="_blank"
+					rel="noopener noreferrer"
+					className="flex w-full justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+				>
+					Borang Korban & Akikah
+				</a>
+				<a
+					href="/amil/"
+					target="_blank"
+					rel="noopener noreferrer"
+					className="flex w-full justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+				>
+					Borang Pugutan Fitrah
+				</a>
+			</div>
 		</>
 	);
 }
