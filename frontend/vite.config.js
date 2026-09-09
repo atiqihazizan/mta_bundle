@@ -45,8 +45,8 @@ export default defineConfig(({ mode }) => ({
   server: {
     proxy: {
       "/api": {
-        // target: mode === "development" ? "https://mta.mahsites.net" : "/api",
-        target: mode === "development" ? "http://localhost:8000" : "/api",
+        target: mode === "development" ? "https://mta.mahsites.net" : "/api",
+        // target: mode === "development" ? "http://localhost:8000" : "/api",
         changeOrigin: true,
         secure: false,
         // rewrite: (path) => path.replace(/^\/api/, ''),
