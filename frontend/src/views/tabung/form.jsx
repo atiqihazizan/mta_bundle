@@ -48,10 +48,12 @@ export default function TabungForm() {
 
 		setLoading(true);
 		if (flagNew) {
-			axiosClient.get("/nvchr").then(({ data }) => {
-				setLoading(false);
-				setKutipan({ ...kutipan, voucher: parseInt(data) + 1 });
-			});
+			axiosClient.get("/nvchr")
+				.then(({ data }) => {
+					setKutipan(prev => ({ ...prev, voucher: data }));
+				})
+				.catch(() => {})
+				.finally(() => setLoading(false));
 			return;
 		}
 

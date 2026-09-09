@@ -67,7 +67,7 @@ class TabungController extends Controller
 
 	public function nvchr()
 	{
-		$first = Tabung::orderBy('voucher', 'desc')->first();
-		return $first->voucher;
+		$max = (int) Tabung::selectRaw('MAX(CAST(voucher AS UNSIGNED)) as m')->value('m');
+		return response()->json($max + 1);
 	}
 }
