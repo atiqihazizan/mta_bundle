@@ -332,7 +332,7 @@ function Dashboard() {
 
           {/* Row 3: Pelajaran */}
           <Card>
-            <CardHeader variant="gradient" color="purple" className="p-6">
+            <CardHeader variant="gradient" color="indigo" className="p-6">
               <Typography variant="h6" color="white">
                 Statistik Pelajaran
               </Typography>
