@@ -20,6 +20,6 @@ export const navigation = [
 	{ name: "Terima Surat", to: "/letters", icon: EnvelopeIcon },
 	{ name: "Baucar", to: "/voucher", icon: TicketIcon },
 	{ name: "Jenazah", to: "/jenazah", icon: HeartIcon },
-	{ name: "Korban & Akikah", to: "/aqiqah/", icon: DocumentTextIcon, external: true },
-	{ name: "Pugutan Fitrah", to: "/amil/", icon: DocumentTextIcon, external: true },
+	{ name: "Korban & Akikah", to: "/aqiqah-form", icon: DocumentTextIcon },
+	{ name: "Pugutan Fitrah", to: "/amil-form", icon: DocumentTextIcon },
 ];
