@@ -24,6 +24,7 @@ export default function TabungForm() {
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
 	const [sumTotal, setSumTotal] = useState(0);
+	const [savedData, setSavedData] = useState(null);
 	const [kutipan, setKutipan] = useState({
 		dateTime: new Date().toISOString().slice(0, 10),
 		ttype: "",
@@ -66,6 +67,12 @@ export default function TabungForm() {
 
 	const onPrint = useReactToPrint({
 		content: () => contPrint.current,
+		onAfterPrint: () => {
+			if (flagNew) {
+				const addMore = window.confirm("Hendak tambah kutipan lagi?");
+				navigate(addMore ? "/tabung/new" : "/tabung");
+			}
+		},
 	});
 
 	function onSubmit(ev) {
@@ -89,7 +96,7 @@ export default function TabungForm() {
 				const myDate = payload.dateTime;
 				if (flagNew) {
 					showToast(`${myTabung} berjaya ditambah`);
-					navigate(`/tabung/${result.data.id}`);
+					setSavedData({ ...kutipan, ...result.data });
 				} else {
 					showToast(`${myTabung} berjaya dikemaskini`);
 				}
@@ -101,6 +108,9 @@ export default function TabungForm() {
 	}
 
 	useEffect(() => !loading && fetchData(), []);
+	useEffect(() => {
+		if (savedData) onPrint();
+	}, [savedData]);
 	useEffect(() => {
 		if (loading) return true;
 		// {new Intl.NumberFormat().format(parseFloat(value))}
@@ -120,7 +130,14 @@ export default function TabungForm() {
 			title="Tabung Kutipan"
 			buttons={
 				<div className="flex gap-2">
-					{!flagNew && (
+					{flagNew ? (
+						<TButton
+							color="primary"
+							onClick={() => document.querySelector("form").requestSubmit()}
+						>
+							Tambah
+						</TButton>
+					) : (
 						<TButton color="light" onClick={onPrint}>
 							<PrinterIcon className="h-5" />
 							Cetak
@@ -213,11 +230,11 @@ export default function TabungForm() {
 									</Card.Body>
 								</Card>
 							</div>
-							{!flagNew && (
+							{(savedData ?? !flagNew) && (
 								<div className="hidden">
 									<TabungPrint
 										ref={contPrint}
-										data={kutipan}
+										data={savedData || kutipan}
 										userCount={userCount}
 										typeMoney={typeMoney}
 										typeList={tabungType}
