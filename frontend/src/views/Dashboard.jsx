@@ -32,88 +32,24 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // Fetch dashboard stats
-        const statsResponse = await axiosClient.get('/dashboard/stats');
-        console.log('Dashboard stats:', statsResponse.data); // Untuk debug
-        const dashboardStats = statsResponse.data.data || {};
-
-        // Fetch kariah data
-        const response = await axiosClient.get('/address');
-        console.log('Address data:', response.data); // Untuk debug
-        const addressData = response.data.data || [];
-
-        // Initialize stats object
-        const residenStats = {
-          kesihatan: {},
-          pekerjaan: {},
-          pelajaran: {},
-          perkahwinan: {},
-          gender: { 'Lelaki': 0, 'Perempuan': 0 }
-        };
-
-        // Fetch all kariah details in parallel
-        const kariahPromises = addressData.map(addr => 
-          axiosClient.get(`/kariah/${addr.id}`)
-            .catch(error => {
-              console.error(`Error fetching kariah data for address ${addr.id}:`, error);
-              return { data: { data: { people: [] } } }; // Return empty data on error
-            })
-        );
-
-        const kariahResponses = await Promise.all(kariahPromises);
-
-        // Process all kariah data
-        kariahResponses.forEach(kariahResponse => {
-          const people = kariahResponse.data.data.people || [];
-          
-          people.forEach(person => {
-            // Count gender (1=lelaki, 2=perempuan)
-            if (person.gender === 1) {
-              residenStats.gender['Lelaki']++;
-            } else if (person.gender === 2) {
-              residenStats.gender['Perempuan']++;
-            }
-
-            // Count kesihatan
-            if (person.healty) {
-              residenStats.kesihatan[person.healty] = (residenStats.kesihatan[person.healty] || 0) + 1;
-            }
-
-            // Count pekerjaan
-            if (person.employee) {
-              residenStats.pekerjaan[person.employee] = (residenStats.pekerjaan[person.employee] || 0) + 1;
-            }
-
-            // Count pelajaran
-            if (person.edustatus) {
-              residenStats.pelajaran[person.edustatus] = (residenStats.pelajaran[person.edustatus] || 0) + 1;
-            }
-
-            // Count perkahwinan
-            if (person.selfstatus) {
-              residenStats.perkahwinan[person.selfstatus] = (residenStats.perkahwinan[person.selfstatus] || 0) + 1;
-            }
-          });
+    axiosClient.get('/dashboard/stats')
+      .then(res => {
+        const d = res.data.data || {};
+        setStats({
+          totalKariah: d.total_kariah || 0,
+          totalAhliKeluarga: d.total_penduduk || 0,
+          totalRumah: d.total_rumah || 0,
+          residenStats: {
+            gender:      d.gender      || { Lelaki: 0, Perempuan: 0 },
+            kesihatan:   d.kesihatan   || {},
+            pekerjaan:   d.pekerjaan   || {},
+            pelajaran:   d.pelajaran   || {},
+            perkahwinan: d.perkahwinan || {},
+          },
         });
-
-        setStats(prevStats => ({
-          ...prevStats,
-          totalKariah: addressData.length,
-          totalAhliKeluarga: dashboardStats.total_penduduk || 0,
-          totalRumah: dashboardStats.total_rumah || 0,
-          residenStats
-        }));
-
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
+      })
+      .catch(err => console.error('Dashboard stats error:', err))
+      .finally(() => setLoading(false));
   }, []);
 
   // Fungsi untuk kira peratusan

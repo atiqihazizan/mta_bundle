@@ -25,12 +25,47 @@ class AddressController extends Controller
 	{
 		$totalRumah = Address::count();
 		$totalPenduduk = Peoples::count();
+		$totalKariah = Address::count();
+
+		$gender = Peoples::selectRaw("gender, count(*) as total")
+			->whereIn('gender', [1, 2])
+			->groupBy('gender')
+			->pluck('total', 'gender');
+
+		$kesihatan = Peoples::join('status_healths', 'peoples.health_id', '=', 'status_healths.id')
+			->selectRaw('status_healths.name as label, count(*) as total')
+			->groupBy('status_healths.name')
+			->pluck('total', 'label');
+
+		$pekerjaan = Peoples::join('status_jobs', 'peoples.job_id', '=', 'status_jobs.id')
+			->selectRaw('status_jobs.name as label, count(*) as total')
+			->groupBy('status_jobs.name')
+			->pluck('total', 'label');
+
+		$pelajaran = Peoples::join('status_educations', 'peoples.edu_id', '=', 'status_educations.id')
+			->selectRaw('status_educations.name as label, count(*) as total')
+			->groupBy('status_educations.name')
+			->pluck('total', 'label');
+
+		$perkahwinan = Peoples::join('status_marriages', 'peoples.married_id', '=', 'status_marriages.id')
+			->selectRaw('status_marriages.name as label, count(*) as total')
+			->groupBy('status_marriages.name')
+			->pluck('total', 'label');
 
 		return response()->json([
 			'status' => true,
 			'data' => [
-				'total_rumah' => $totalRumah,
-				'total_penduduk' => $totalPenduduk
+				'total_rumah'   => $totalRumah,
+				'total_penduduk' => $totalPenduduk,
+				'total_kariah'  => $totalKariah,
+				'gender'        => [
+					'Lelaki'    => $gender[1] ?? 0,
+					'Perempuan' => $gender[2] ?? 0,
+				],
+				'kesihatan'     => $kesihatan,
+				'pekerjaan'     => $pekerjaan,
+				'pelajaran'     => $pelajaran,
+				'perkahwinan'   => $perkahwinan,
 			]
 		]);
 	}
