@@ -68,6 +68,7 @@ class TabungController extends Controller
 	public function nvchr()
 	{
 		$last = Tabung::orderBy('created_at', 'desc')->value('voucher');
-		return response()->json((int) $last + 1);
+		$next = (int) $last + 1;
+		return response()->json(str_pad($next, 5, '0', STR_PAD_LEFT));
 	}
 }
