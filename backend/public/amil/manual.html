@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panduan Sistem Pugutan Fitrah</title>
+<style>
+	* { box-sizing: border-box; }
+
+	body {
+		font-family: Arial, Helvetica, sans-serif;
+		font-size: 18px;
+		line-height: 1.6;
+		color: #111;
+		background-color: #f0f0f0;
+		margin: 0;
+		padding: 20px;
+	}
+
+	.page {
+		max-width: 900px;
+		margin: 0 auto;
+		background: #fff;
+		padding: 30px;
+		border-radius: 8px;
+		box-shadow: 0 0 15px rgba(0,0,0,0.15);
+	}
+
+	.top-bar {
+		display: flex;
+		justify-content: flex-end;
+		gap: 10px;
+		margin-bottom: 20px;
+	}
+
+	.btn-cetak {
+		background-color: #2196F3;
+		color: #fff;
+		border: none;
+		padding: 12px 24px;
+		font-size: 18px;
+		font-weight: bold;
+		border-radius: 6px;
+		cursor: pointer;
+	}
+
+	.btn-cetak:hover {
+		background-color: #1976D2;
+	}
+
+	h1.tajuk {
+		text-align: center;
+		font-size: 32px;
+		color: #fff;
+		background-color: #2E7D32;
+		padding: 20px;
+		border-radius: 8px;
+		margin: 0 0 30px 0;
+	}
+
+	h2.bahagian {
+		font-size: 26px;
+		color: #fff;
+		background-color: #4CAF50;
+		padding: 12px 18px;
+		border-radius: 6px;
+		margin-top: 40px;
+	}
+
+	ol.langkah {
+		list-style: none;
+		padding: 0;
+		margin: 20px 0;
+		counter-reset: langkah-counter;
+	}
+
+	ol.langkah > li {
+		counter-increment: langkah-counter;
+		position: relative;
+		background-color: #F1F8E9;
+		border: 2px solid #A5D6A7;
+		border-radius: 8px;
+		padding: 16px 16px 16px 70px;
+		margin-bottom: 16px;
+		font-size: 19px;
+	}
+
+	ol.langkah > li::before {
+		content: counter(langkah-counter);
+		position: absolute;
+		left: 14px;
+		top: 14px;
+		width: 40px;
+		height: 40px;
+		background-color: #2E7D32;
+		color: #fff;
+		font-size: 22px;
+		font-weight: bold;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.contoh {
+		font-family: "Courier New", monospace;
+		background-color: #263238;
+		color: #B2FF59;
+		padding: 16px;
+		border-radius: 6px;
+		font-size: 15px;
+		white-space: pre;
+		overflow-x: auto;
+		margin-top: 10px;
+	}
+
+	.petua {
+		background-color: #FFF9C4;
+		border: 3px solid #FBC02D;
+		border-radius: 8px;
+		padding: 20px;
+		margin-top: 30px;
+		font-size: 19px;
+	}
+
+	.petua h3 {
+		margin-top: 0;
+		font-size: 24px;
+		color: #795548;
+	}
+
+	.petua table {
+		width: 100%;
+		border-collapse: collapse;
+		margin-top: 12px;
+		font-size: 18px;
+	}
+
+	.petua table th,
+	.petua table td {
+		border: 1px solid #FBC02D;
+		padding: 10px;
+		text-align: left;
+	}
+
+	.petua table th {
+		background-color: #FFECB3;
+	}
+
+	.kotak-qr {
+		background-color: #E3F2FD;
+		border: 2px solid #90CAF9;
+		border-radius: 8px;
+		padding: 16px;
+		margin-top: 16px;
+		font-size: 19px;
+	}
+
+	.nota-akhir {
+		text-align: center;
+		margin-top: 40px;
+		font-size: 16px;
+		color: #666;
+	}
+
+	@media print {
+		body {
+			background: #fff;
+			padding: 0;
+		}
+		.page {
+			box-shadow: none;
+			padding: 0;
+		}
+		.top-bar {
+			display: none;
+		}
+		h2.bahagian {
+			break-before: page;
+		}
+		h2.bahagian:first-of-type {
+			break-before: auto;
+		}
+	}
+</style>
+</head>
+<body>
+	<div class="page">
+		<div class="top-bar">
+			<button class="btn-cetak" onclick="window.print()">🖨️ Cetak Panduan Ini</button>
+		</div>
+
+		<h1 class="tajuk">📋 PANDUAN SISTEM PUGUTAN FITRAH</h1>
+
+		<h2 class="bahagian">BAHAGIAN 1: 🖨️ CARA CETAK BORANG RINGKASAN</h2>
+		<ol class="langkah">
+			<li>Buka halaman utama sistem di pelayar (browser) telefon atau komputer.</li>
+			<li>Klik kotak <strong>"Pilih Amil"</strong> dan pilih nama Amil yang dikehendaki.</li>
+			<li>Borang ringkasan kutipan akan terpapar automatik di skrin.</li>
+			<li>Klik butang hijau <strong>"Print"</strong> di sebelah kotak nama Amil.</li>
+			<li>Pilih pencetak (printer) anda, pastikan saiz kertas <strong>A4</strong>, kemudian tekan <strong>Print</strong>.</li>
+		</ol>
+		<div class="contoh">┌───────────────────────────────────────────────┐
+│  Pilih Amil ▼        [ 🖨️ Print ]   Kemaskini  │
+└───────────────────────────────────────────────┘
+      ↑                        ↑
+   Langkah 2               Langkah 4
+  (pilih nama)           (klik untuk cetak)</div>
+
+		<h2 class="bahagian">BAHAGIAN 2: ✏️ CARA MASUK / KEMASKINI DATA AMIL</h2>
+		<ol class="langkah">
+			<li>Dari halaman utama, klik pautan <strong>"Kemaskini"</strong> di sebelah kanan atas.</li>
+			<li>Skrin akan tunjuk <strong>Senarai Amil</strong> yang sedia ada.</li>
+			<li>Klik <strong>"Tambah Amil Baru"</strong> jika nama Amil belum ada, ATAU klik <strong>"Edit"</strong> di sebelah nama Amil untuk kemaskini data sedia ada.</li>
+			<li>Isi atau kemaskini maklumat berikut:
+				<ul>
+					<li>✅ Nama Amil</li>
+					<li>✅ Jenis Kupon (RM7 / RM10 / RM15 / RM25)</li>
+					<li>✅ No. Buku</li>
+					<li>✅ No. Resit Mula dan No. Resit Akhir</li>
+					<li>✅ Bilangan QR (jika ada)</li>
+				</ul>
+			</li>
+			<li>Klik butang hijau <strong>"Simpan"</strong> (amil baru) atau <strong>"Kemaskini"</strong> (amil sedia ada) untuk simpan maklumat.</li>
+		</ol>
+		<div class="contoh">┌───────────────────────────────────────────────┐
+│  Senarai Amil          [ + Tambah Amil Baru ]  │
+├───────────────────────────────────────────────┤
+│  Ali bin Ahmad     [ Edit ]  [ Lihat ]         │
+│  Osman bin Yusof   [ Edit ]  [ Lihat ]         │
+└───────────────────────────────────────────────┘
+                              ↑
+                     Langkah 3 (klik Edit)</div>
+
+		<div class="petua">
+			<h3>⚠️ PETUA PENTING</h3>
+			<p><strong>Makna No. Resit Mula &amp; No. Resit Akhir:</strong></p>
+			<table>
+				<tr>
+					<th>No. Resit Mula</th>
+					<th>No. Resit Akhir</th>
+					<th>Maksudnya</th>
+				</tr>
+				<tr>
+					<td>Ada nombor</td>
+					<td>0 (kosong)</td>
+					<td>Semua 50 resit dalam buku telah dikeluarkan.</td>
+				</tr>
+				<tr>
+					<td>Ada nombor</td>
+					<td>Ada nombor</td>
+					<td>Resit dikeluarkan bermula dari nombor Mula sehingga nombor Akhir sahaja.</td>
+				</tr>
+				<tr>
+					<td>0 (kosong)</td>
+					<td>Ada nombor</td>
+					<td>Buku ini belum digunakan. Nombor Akhir menunjukkan resit pertama buku itu.</td>
+				</tr>
+			</table>
+
+			<div class="kotak-qr">
+				<strong>📱 Apa itu QR?</strong><br>
+				QR ialah bilangan resit yang dibayar oleh penderma secara <strong>online (QR code)</strong>, bukan secara tunai.
+				Bilangan ini ditolak daripada jumlah kutipan tunai supaya jumlah wang tunai yang diserahkan tepat.
+			</div>
+		</div>
+
+		<p class="nota-akhir">Jika masih keliru, sila hubungi Pentadbir Sistem MTA untuk bantuan.</p>
+	</div>
+</body>
+</html>
